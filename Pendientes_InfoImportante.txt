@@ -17,7 +17,7 @@ _____________________________________________________________________
 
 Puerto de postgress: 5432
 venv\Scripts\activate
-backend\venv\Scripts\activate @
+backend\venv\Scripts\activate
 https://dbdiagram.io/d
 Dimensiones de las imágenes: 
     Relación de aspecto de 9:16 (Vertical).

@@ -9,14 +9,12 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      {/* 1. Agregamos initialRouteName="index" para obligar a la app a empezar ahí */}
       <Stack screenOptions={{ headerShown: false }} initialRouteName="index">
         
-        {/* 2. Declaramos explícitamente el index */}
         <Stack.Screen name="index" options={{ headerShown: false }} />
         
-        {/* 3. COMENTAMOS EL SANDBOX para que Expo olvide esa ruta por ahora */}
-        {/* <Stack.Screen name="sandbox" options={{ title: 'Diseño Circle' }} /> */}
+        {/* 1. DESCOMENTAMOS EL SANDBOX para que vuelva a estar disponible en la navegación */}
+        <Stack.Screen name="sandbox" options={{ title: 'Patio de Pruebas Circle' }} />
 
         {/* Grupo de Autenticación */}
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />

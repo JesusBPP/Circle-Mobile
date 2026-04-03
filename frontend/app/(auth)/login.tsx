@@ -72,7 +72,7 @@ export default function Login() {
       console.log("Datos recibidos del backend:", userData);
       
       // router.replace borra el historial para que el usuario no pueda volver al login dándole al botón de "Atrás"
-      router.replace('/(tabs)/home'); 
+      router.replace('/sandbox'); 
 
     } catch (error: any) {
       // 3. Si falla (contraseña incorrecta), mostramos el error que mandó FastAPI
