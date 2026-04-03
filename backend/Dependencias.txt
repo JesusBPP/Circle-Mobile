@@ -1,0 +1,8 @@
+pip install fastapi uvicorn sqlalchemy psycopg2-binary
+pip install "pydantic[email]"
+pip install Pillow
+
+**************************
+******** Frontend ********
+**************************
+npm install axios

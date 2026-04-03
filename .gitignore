@@ -1,0 +1,14 @@
+# Entornos virtuales y caché de Python (Backend)
+backend/venv/
+__pycache__/
+*.pyc
+
+# Archivos de entorno y secretos
+.env
+
+# Base de datos local (Opcional, pero recomendado no subir datos de prueba si usas SQLite, aunque en PostgreSQL no aplica tanto)
+*.sqlite3
+
+# Dependencias de Node (Frontend) - Aunque ya tengas uno en frontend/, es buena práctica
+frontend/node_modules/
+frontend/.expo/

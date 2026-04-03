@@ -1,0 +1,250 @@
+// ==========================================
+// 1. CORE: USUARIOS Y SUSCRIPCIONES
+// ==========================================
+
+Table Usuarios {
+  id int [pk, increment]
+  nombre varchar [not null]
+  correo varchar [unique, not null]
+  contrasena varchar [not null]
+  
+  // Datos personales
+  fecha_nacimiento date [note: "Python calcula la edad dinámicamente con este dato"]
+  
+  // Desglose de dirección (Todos opcionales excepto CP)
+  calle varchar
+  numero_exterior varchar
+  numero_interior varchar
+  colonia varchar
+  ciudad varchar
+  estado varchar
+  pais varchar [default: "'México'"]
+  codigo_postal varchar [not null, note: "Obligatorio"]
+  fecha_registro timestamp
+
+  // 👑 BANDERA DE SUPER ADMINISTRADOR
+  es_admin_sistema boolean [default: false, note: "Si es True, tiene acceso global a todo Circle"]
+  
+  // ROLES DE NEGOCIO (Dinámicos):
+  // Todos son consumidores. Eres dueño si tu ID está en Negocios.
+  // Eres empleado si tu ID está en Empleados_Sucursal.
+}
+
+Table Suscripciones {
+  id int [pk, increment]
+  nombre_plan varchar [note: "'Gratis', 'Premium'"]
+  limite_soluciones int [note: "3 para Gratis"]
+  limite_sucursales int [note: "1 para Gratis"]
+  limite_empleados int [note: "15 para Gratis"]
+  limite_consumidores int [note: "100 para Gratis"]
+  limite_productos int [note: "50 para Gratis"]
+}
+
+// ==========================================
+// 2. CORE: NEGOCIOS, SUCURSALES Y EMPLEADOS
+// ==========================================
+
+Table Negocios {
+  id int [pk, increment]
+  id_dueno int [ref: > Usuarios.id]
+  id_suscripcion int [ref: > Suscripciones.id]
+  nombre varchar [not null]
+  descripcion varchar [note: "Descripción general del negocio para su perfil"]
+  fecha_creacion timestamp [not null]
+  
+  Indexes {
+    id_dueno [name: 'idx_negocios_dueno']
+  }
+}
+
+// Un negocio puede tener varias sucursales (Gratis = 1)
+Table Sucursales {
+  id int [pk, increment]
+  id_negocio int [ref: > Negocios.id]
+  nombre varchar [not null]
+  
+  // Desglose de dirección (Obligatorios)
+  calle varchar [not null]
+  numero_exterior varchar [not null]
+  numero_interior varchar [note: "Único campo opcional por si no aplica"]
+  colonia varchar [not null]
+  ciudad varchar [not null]
+  estado varchar [not null]
+  pais varchar [not null, default: "'México'"]
+  codigo_postal varchar [not null]
+  
+  // Caché de rendimiento para la App Móvil
+  calificacion_promedio decimal [note: "Ej: 4.8 - Actualizado por Python automáticamente"]
+  total_resenas int [note: "Cuánta gente ha calificado esta sucursal"]
+}
+
+// Tabla pivote: Conecta a un Usuario (empleado) con una Sucursal
+Table Empleados_Sucursal {
+  id int [pk, increment]
+  id_usuario int [ref: > Usuarios.id]
+  id_sucursal int [ref: > Sucursales.id]
+  estado_invitacion varchar [not null, note: "'pendiente' o 'aceptada'"]
+  permisos varchar [not null, note: "'solo_operacion'"]
+}
+
+// ==========================================
+// 3. PRODUCTOS Y SERVICIOS (Soluciones 3 y 4)
+// ==========================================
+
+Table Materiales {
+  id int [pk, increment]
+  nombre varchar [not null]
+  descripcion varchar
+  url_imagen varchar
+  costo decimal [not null]
+  cantidad_existencia decimal [not null]
+}
+
+Table Servicios_Productos {
+  id int [pk, increment]
+  nombre varchar [not null]
+  descripcion varchar
+  url_imagen varchar
+  costo decimal [not null]
+  tipo_producto varchar [not null, note:"'servicio' o 'producto'"]
+}
+
+Table Proceso_Servicio_Producto {
+  id int [pk, increment]
+  id_servicio_producto int [ref: > Servicios_Productos.id]
+  id_material int [ref: > Materiales.id]
+  cantidad decimal
+  ultimo_resurtido timestamp
+}
+
+// Pivote: Un servicio puede darse en una o varias sucursales del negocio
+Table Servicios_Disponibles {
+  id int [pk, increment]
+  id_servicio_producto int [ref: > Servicios_Productos.id]
+  id_sucursal int [ref: > Sucursales.id]
+  
+}
+
+Table Transacciones {
+  id int [pk, increment]
+  id_usuario_consumidor int [ref: > Usuarios.id]
+  monto_total decimal [not null, note: "Suma de todos los subtotal"]
+  fecha_transaccion timestamp [not null]
+}
+
+Table Detalle_Transaccion {
+  id int [pk, increment]
+  id_transaccion int [not null, ref: > Transacciones.id]
+  id_servicios_productos_disponibles int [ref: > Servicios_Disponibles.id]
+  cantidad int [not null]
+  subtotal decimal [not null, note: "Cantidad por el costo de servicios_productos"]
+}
+
+// ==========================================
+// 4. SOLUCIÓN 1: AGENDA INTELIGENTE
+// ==========================================
+
+// Lista Blanca para autogestión de citas
+Table Agenda_Whitelist {
+  id int [pk, increment]
+  id_sucursales int [not null, ref: > Sucursales.id]
+  id_usuario_consumidor int [ref: > Usuarios.id, note: "Null si el usuario aún no se registra en Circle"]
+}
+
+Table Citas {
+  id int [pk, increment]
+  id_sucursal int [not null, ref: > Sucursales.id]
+  titulo varchar [not null]
+  descripcion varchar
+  fecha_hora_inicio timestamp [not null]
+  fecha_hora_fin timestamp [not null]
+  numero_bloques int [not null]
+  notas_internas varchar
+  estado varchar [not null, default: "'programada','completada','cancelada','reagenda'"]
+}
+
+// Pivote: Una cita puede abarcar múltiples servicios (Corte + Tinte)
+Table Citas_Servicios {
+  id_cita int [ref: > Citas.id]
+  id_servicio int [ref: > Servicios_Productos.id]
+}
+
+// Historial de archivos multimedia por cita
+Table Archivos_Citas {
+  id int [pk, increment]
+  id_cita int [not null, ref: > Citas.id]
+  url_archivo varchar [not null]
+  nombre_archivo varchar [not null]
+  tipo_archivo varchar [not null]
+  tamano_mb decimal [note: "Control de cuota Premium: Máximo 10 GB"]
+  fecha_subida timestamp [not null]
+}
+
+Table Citas_Consumidores {
+  id_cita int [ref: > Citas.id]
+  id_usuario_consumidor int [ref: > Usuarios.id]
+}
+
+// ==========================================
+// 5. SOLUCIÓN 1: INTELIGENCIA DE USUARIOS
+// ==========================================
+
+Table CRM_Clientes_Negocio {
+  id int [pk, increment]
+  id_sucursales int [ref: > Sucursales.id]
+  id_usuario_consumidor int [ref: > Usuarios.id]
+  segmento_calculado varchar [note: "'Leal', 'Riesgo', 'Cazador' - Llenado por Python"]
+  fecha_ultima_visita timestamp
+}
+
+// ==========================================
+// 6. SOLUCIÓN 5: PROGRAMA DE LEALTAD Y OFERTAS
+// ==========================================
+
+Table Resenas_Sucursales {
+  id int [pk, increment]
+  id_sucursal int [ref: > Sucursales.id]
+  id_usuario_consumidor int [ref: > Usuarios.id]
+  puntuacion int [not null, note: "Ej: 1 al 5 estrellas"]
+  comentario varchar
+  fecha_resena timestamp [not null]
+}
+
+// --- MOTOR DE REGLAS (OFERTAS DINÁMICAS N x N) ---
+
+Table Ofertas {
+  id int [pk, increment]
+  id_Sucursales int [not null, ref: > Sucursales.id]
+  titulo varchar [not null]
+  descripcion varchar
+  fecha_inicio timestamp
+  fecha_fin timestamp
+  limite_existencias int [note: "Null = Ilimitadas"]
+  es_publica boolean [not null, default: true, note: "Si es True, ignora la Whitelist"]
+}
+
+// Los "Bloques de Lego" para armar la oferta
+Table Ofertas_Reglas {
+  id int [pk, increment]
+  id_oferta int [not null, ref: > Ofertas.id]
+  tipo_regla varchar [not null, note: "'requisito' o 'recompensa'"]
+  id_servicio_producto int [ref: > Servicios_Productos.id]
+  cantidad int
+  porcentaje_descuento decimal [note: "Ej: 15% de descuento"]
+  monto_descuento decimal [note: "Ej: $50 pesos de descuento directo"]
+  monto_minimo decimal [note: "Para el caso: Gasta $200 y obtén X"]
+}
+
+// Exclusividad de la oferta
+Table Ofertas_Whitelist {
+  id_oferta int [ref: > Ofertas.id]
+  id_usuario_consumidor int [ref: > Usuarios.id]
+}
+
+// Registro de quién escaneó el QR y cobró la promoción
+Table Historial_Uso_Ofertas {
+  id int [pk, increment]
+  id_oferta int [not null, ref: > Ofertas.id]
+  id_usuario_consumidor int [not null, ref: > Usuarios.id]
+  fecha_uso timestamp [not null]
+}

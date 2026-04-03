@@ -1,0 +1,187 @@
+Es todo un ecosistema, tu como usuario te registras y al momento de hacerlo puedes registrarte como Usuario con negocio, si no lo haces, eres un usuario consumidor. 
+Importante mencionar que nuestros usuarios objetivos son los usuarios con negocio, ya que para ellos estamos haciendo esta tecnología.
+Tu como usuario con negocio, vas a tener la oportunidad de crear tu cuenta gratis o como usuario Premium y usar nuestras soluciones. 
+En general tenemos varias soluciones:
+
+    1. Agenda / Gestión e inteligencia de usuarios
+
+    2. Gestión de inventario y personal
+
+    3. Análisis de productos
+
+    4. Análisis de servicios
+
+    5. Programa de lealtad
+
+            ||
+            ||
+            ||
+
+1. Agenda / Gestión e inteligencia de usuarios
+Agenda inteligente es una herramienta que funciona por si sola, se pueden agendar eventos, cumpleaños, citas para un servicio, etc.
+    Los eventos se registran por bloques de tiempo en la agenda, los días los dividimos por bloques de media hora.
+    Un evento puede tomar los bloques que se deseen. Se pueden empalmar eventos en los mismos bloques de tiempo.
+    Cada evento tiene un titulo y una descripción que se verá al dar clic en el evento en la agenda, esto por si quieren guardar un link o notas importantes.
+    Si el evento es una cita, con uno o más consumidores, aparecerá el nombre de los usuarios consumidores involucrados.
+Tiene la opción de mandar recordatorios, a ti, de eventos próximos.
+Gestión e inteligencia de usuarios es una herramienta que va de la mano de la Agenda inteligente.
+Esta solución muestra información útil, como estadísticos{
+    Ticket Promedio (AOV): Matemáticamente, es el total de dinero gastado por un consumidor dividido entre su número de visitas.
+    Horarios y Días Preferidos: Agrupar las visitas de un cliente por día de la semana o bloque de horas. 
+        Impacto en código: Obliga a que cada registro de lealtad o compra tenga un campo Timestamp (fecha y hora exacta, no solo la fecha).
+    Valor de Vida del Cliente (CLV - Customer Lifetime Value): La suma total histórica de todo lo que ha gastado un cliente en un negocio específico.
+    Segmentación de clientes por categorías, separación por clusters, por ejemplo:
+        1. Leales
+        2. Riesgo de abandono
+        3. Cazadores de ofertas
+    Opción de automatizar comunicación con clientes
+    Opción de recordatorio al consumidor cuando se note ausencia en determinado rango de tiempo (Puede incluir una oferta o descuento - OPCIONAL)
+    
+}
+Una de sus funcionalidades es llevar el manejo de las citas de los consumidores, 
+    Una cita consta de una nota (texto, string), espacio para subir archivo o imagenes (Subir archivos e imágenes es de premium limitado a 10 GB de espacio).
+    Al momento de atender la cita, se puede agendar una próxima cita.
+    Una cita se debe registrar en el calendario.
+    Una cita puede tener un costo $$$, pero es Opcional si el dueño del negocio lo desea.
+    El costo lo ingresa el dueño del negocio. Lo puede hacer al momento de agendar la cita o después.
+    Se debe registrar el número de bloques de tiempo que va a ocupar la cita
+    La agenda inteligente mencionará si es que se empalma el registro de una cita con otra al momento de agendarla.
+También podrá llevar el historial de las citas por usuario consumidor.
+    Un usuario consumidor puede tener 0 o muchas citas, en diferentes negocios.
+Intersección con el programa de lealtad: 
+Los consumidores que hayan tenido citas con el negocio en una de sus sucursales, podrán agendar citas en las agendas de los negocios.
+    Esto es opcional, el dueño del negocio lo debe habilitar a las personas que el quiera y que hayan tenido citas con el. 
+    También podrá habilitar a personas que no hayan tenido una cita con el negocio, se hará mediante el correo electrónico, si no se pasa exactamente el correo como se tiene registrado, no se mostrará nada.
+    En el caso de que un consumidor quiera agendar una cita, no podrá agendar en horarios que se empalmen con eventos o citas ya registradas.
+    El dueño del negocio o un empleado publicarán servicios disponibles para que agenden citas. (Intersección con Análisis de Servicios por la entidad servicios).
+    Los servicios publicados tomarán bloques de tiempo que el dueño del negocio haya establecido.
+    Agendar el servicio entonces relaciona la sucursal, el consumidor, el servicio y el tiempo en la agenda.
+
+
+2. Gestión de investario y personal
+Predicción de Demanda (Módulo de Inventario): 
+    Algoritmos de series de tiempo (como ARIMA o Prophet) que analicen el historial de ventas y le digan al dueño del negocio: "Te quedarás sin el Producto X el próximo martes, te sugiero reabastecer hoy".
+Gestión del inventario te muestra estadísticos como{
+    Caducidad de productos
+    Escaces de X producto
+    Rotación de inventario, GMROY, podemos dividir en 2 los estadisticos, los que monitorean comportamiento y los que se usan para tomar decisiones
+}
+
+
+3. Análisis de productos
+Esta herramienta gestiona tus productos.
+Aquí el dueño del negocio puede{
+    Registrar productos 
+        Un prodicto consta de Nombre, descripción, imagen (opcional), costo.
+}
+Muestra estadísticos como{
+    Ticket promedio
+    Afinidad de Productos (Cross-selling): Un algoritmo en Python que evalúe: "Si el cliente compró el Producto A, hay un 80% de probabilidad de que compre el Producto B". Impacto en código: Requeriremos una tabla de Detalle_Transacciones que no solo diga "gastó $100", sino que liste qué productos exactos se llevó.
+}
+
+
+4. Análisis de servicios
+Esta herramienta gestiona tus servicios.
+Aquí el dueño del negocio puede{
+    Registrar sus servicios
+        Un servicio consta de Nombre, Descripción, Costo, sucursal en las que se da el servicio.
+    Modificar alguno de los atributos del negocio.
+}
+Muestra estadísticos como{
+    Frecuencia de visitas
+    LTV (Valor del ciclo de vida del cliente)
+    Volumen de ventas, rentabilidad, costos, frecuencia de uso, frecuencia de compra, nomina, predicción de ventas dependiendo la tendencia
+}
+
+
+5. Programa de lealtad:
+Si eres un usuario consumidor, estarás relacionado al programa de lealtad de los negocios que estén registrados en nuestro sistema.
+Como consumidor puedes{
+    Asociarte al programa de lealtad de cualquier negocio.
+    Cobrar tu descuento o promoción con un sistema de QR.
+    Ver ubicación actual y negocios cerca de el:
+        1. Negocios con recompensas (descuentos, 2 x 1, etc.)
+        2. Nuevos negocios
+        3. Viejos conocidos
+    Ver tus puntos o servicios gratis, esto por negocio
+    Dejar una puntuación por cada descuento u oferta que se tome.
+    Si el dueño del negocio lo habilita, agendar citas en las agendas de los negocios, no se pueden empalmar con eventos o citas ya registradas.
+}  
+Como dueño de negocio puedes{
+    Publicar ofertas, descuentos, descuentos exclusivos a usuarios frecuentes, etc.
+        Descuentos u Ofertas: Un descuento u oferta consta de Descripción, monto del descuento (Puede ser un monto estático o porcentual) (OPCIONAL),
+            Tipo de oferta (Será una relación abierta, ya sea producto - prodcuto, producto - servicio, servicio - servicio) (OPCIONAL)
+                La relación podrá ser N X N, por ejemplo, 2 x 2, 3 x 2, 3 x 1, Servicio1 + Producto1, Servicio1 + 2 Producto1, llegar a cierto $$ y te dan un producto o servicio. Esto lo establece el dueño del negocio.
+                Incluye el monto total por la relación hecha.
+            Relación con un servicio o producto.
+            Vida del descuento (Consta de fecha de inicio y fecha fin o dependiendo el número de existencias). Sucursal a las que se aplicará.
+            Lista de consumidores específicos a los que aplicará el descuento (OPCIONAL).
+            Se podrá llevar el registro de qué usuarios han tomado el descuento.
+
+
+    Habilitar comentarios si el dueño del negocio lo quiere, 
+    Configuración de recompensa
+        1. Ticket - 1 punto por cada $ gastado
+        2. Visita - 1 sello digital por cada servicio comprado
+        3. Producto - Puntos dobles por X producto
+
+    Ver cuándo caducan los puntos de los usuarios
+    Habilitar que los consumidores puedan agendar citas en las agendas de las sucursales de los negocios.
+}
+
+
+Un usuario puede tener uno o más negocios
+    Un negocio puede tener 1 o más sucursales
+        Las sucursales pueden tener 0 o más empleados (Los empleados son cuentas de usuarios también)
+            El dueño del negocio debe agregar al empleado (al negocio) y el empleado debe aceptar.
+
+Un empleado de negocio puede hacer lo siguiente{
+    Utilizar las soluciones del negocio que el dueño del negocio decidió agregar
+    Tiene permisos limitados
+        Sólo podrá operar las soluciones, nada de gestión del negocio
+        No puede agregar otros empleados
+        No puede modificar datos del negocio
+        No puede modificar las soluciones que tiene el negocio
+}
+
+
+La diferencia entre los 2 tipos de cuenta es que la versión GRATIS tendrá una versión limitada de la aplicación{ 
+    Sólo podrá tener acceso a 3 de nuestras soluciones
+    No tendrá contacto directo con un administrador de la aplicación
+    Tendrá versiones limitadas de las soluciones
+        1. Si es Análisis de productos y/o servicios, sólo podrá elegir un máximo de 2 servicios y/o 3 productos a analizar.
+        2. Gestión de usuarios tendrá un máximo de 100 consumidores a registrar
+        3. Inventario tendrá un máximo de 50 productos a registrar
+        4. Gestión de personal tendrá un máximo de 15 empleados a registrar
+        5. Programa de lealtad no tendrá la opción de dejar reseña por cada descuento u oferta consumida con QR.
+        6. Sólo se tendrá la gestión de usuarios, no la inteligencia de usuarios.
+        7. Sólo se podrá registrar un negocio con una sucursal
+}
+
+Mientras que la versión PREMIUM tiene la versión completa de la aplicación, todas las soluciones, y las siguientes ventajas{
+    Automatización de comunicación con sus usuarios vía whatsapp
+    Módulos hechos a la medida
+    Comunicación directa con un administrador de la aplicación
+}
+
+
+=========================================================
+OBSERVACIONES
+=========================================================
+
+Diferencias entre el sistema de lealtad y la gestion - inteligencia de usuarios:
+    Sistema de lealtad{
+        Maneja el sistema de puntos/recompensas de usuarios consumidores
+        Gestiona la puntuación del negocio a través de puntuaciones individuales de los usuarios consumidores
+        Muestra comentarios de los usuarios consumidores
+        Ecosistema donde interactua el consumidor con el negocio y el negocio con el consumidor
+    }
+
+    Gestion - inteligencia de usuarios {
+        Gestiona y enlista a los usuarios consumidores
+        Gestiona citas con los usuarios consumidores (No funcional para una tienda de abarrotes)
+        Muestra estadísticos inteligentes de los usuarios.
+        Historial de usuarios consumidores
+        Relación con la agenda inteligente
+        Tiene el sistema de recordatorio de citas inteligente
+    }

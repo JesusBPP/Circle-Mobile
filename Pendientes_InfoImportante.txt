@@ -1,0 +1,76 @@
+PROYECTO: CIRCLE - REGISTRO DE PENDIENTES
+
+[x] 1. Instalar PostgreSQL en el equipo.
+[x] 2. Crear ambiente virtual para las librerías de Python (Backend).
+[x] 3. Crear el ambiente para el frontend con React Native.
+[x] 4. Crear archivo (.md) con la arquitectura de archivos del proyecto.
+[x] 5. Crear archivo (.dbml) con la arquitectura de la base de datos.
+[x] 6. Crear la base de datos en PostgreSQL a partir del diseño DBML, modelos ORM (.py) + Alembic.
+[x] 7. Preparar tecnologías para visualizar el frontend (Emuladores/Simuladores móviles).
+[ ] 8. Crear biblioteca de componentes básicos (components/ui)
+[X] 9. Crear pantalla de pruebas (app/sandbox.tsx).
+[X] 10. Crear interfaz visual de Login (app/(auth)/login.tsx).
+[X] 11. Conectar Login con el Backend.
+[ ] 12. Crear primer componente de la bliblioteca | Pantalla catalogo Inicio_Negocios
+_____________________________________________________________________
+            ANOTACIONES IMPORTANTES
+
+Puerto de postgress: 5432
+venv\Scripts\activate
+backend\venv\Scripts\activate @
+https://dbdiagram.io/d
+Dimensiones de las imágenes: 
+    Relación de aspecto de 9:16 (Vertical).
+    Una medida excelente es 1080 x 1920 px
+
+Paleta de colores:
+CIRCLE Project Color Palette - Guía de Tonalidades RGB
+
+/* VERDE */
+--lime-green: rgb(144, 238, 144);
+--emerald: rgb(0, 201, 87);
+--forest-green: rgb(34, 139, 34);
+
+/* AZUL */
+--sky-blue: rgb(135, 206, 235);
+--sapphire: rgb(15, 82, 186);
+--cobalt-blue: rgb(0, 71, 171);
+
+/* CAFE */
+--tan: rgb(210, 180, 140);
+--Cafeligth: rgb(145, 89, 25)
+--chocolate: rgb(92, 53, 25);
+
+
+/* BLANCO */
+--pure-white: rgb(255, 255, 255);
+--cream: rgb(245, 245, 220);
+--ivory: rgb(255, 255, 240);
+
+/* NEGRO */
+--pure-black: rgb(0, 0, 0);
+--charcoal: rgb(47, 79, 79);
+--obsidian: rgb(11, 11, 11);
+
+/* GRIS */
+--silver: rgb(211, 211, 211);
+--medium-gray: rgb(128, 128, 128);
+--slate-gray: rgb(47, 79, 79);
+
+/* MORADO */
+--lavender: rgb(230, 230, 250);
+--mauve: rgb(224, 176, 255);
+--amethyst: rgb(153, 102, 204);
+
+/* ROSA */
+--pastel-pink: rgb(255, 182, 193);
+--bubblegum: rgb(255, 105, 180);
+--fuchsia: rgb(255, 0, 255);
+
+/* PÚRPURA */
+--indigo: rgb(75, 0, 130);
+--violet: rgb(138, 43, 226);
+--royal-purple: rgb(120, 0, 150);
+_____________________________________________________________________
+
+
