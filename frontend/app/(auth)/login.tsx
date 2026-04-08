@@ -72,7 +72,7 @@ export default function Login() {
       console.log("Datos recibidos del backend:", userData);
       
       // router.replace borra el historial para que el usuario no pueda volver al login dándole al botón de "Atrás"
-      router.replace('/sandbox'); 
+      router.replace('/vistaUnUI'); 
 
     } catch (error: any) {
       // 3. Si falla (contraseña incorrecta), mostramos el error que mandó FastAPI
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   topSection: { height: height * 0.75, width: '100%', overflow: 'hidden' },
   bottomBlackFiller: { flex: 1, backgroundColor: '#000' },
   formLayer: {
-    backgroundColor: '#FFFFFF', borderTopLeftRadius: 30, borderTopRightRadius: 30,
+    backgroundColor: 'rgb(255, 255, 240)', borderTopLeftRadius: 30, borderTopRightRadius: 30,
     paddingHorizontal: 25, paddingTop: 25, paddingBottom: Platform.OS === 'ios' ? 40 : 25,
     width: '100%', elevation: 25, shadowColor: '#000', shadowOffset: { width: 0, height: -10 },
     shadowOpacity: 0.2, shadowRadius: 15,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   brandSubtitle: { fontSize: 12, color: '#64748b', textAlign: 'center' },
   formFields: { width: '100%', gap: 12 },
   inputContainer: {
-    width: '100%', height: 48, backgroundColor: '#f1f5f9', borderRadius: 12,
+    width: '100%', height: 48, backgroundColor: 'rgb(255, 255, 240)', borderRadius: 12,
     paddingHorizontal: 15, justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0',
   },
   input: { fontSize: 16, color: '#1e293b' },

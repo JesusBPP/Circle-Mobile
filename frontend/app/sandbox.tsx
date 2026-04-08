@@ -2,9 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { router } from 'expo-router';
 
-// Importamos nuestro "Bloque de Lego" genérico
-import { RadialMenu } from '../ui/RadialMenu';
+// 🌟 Importamos ambos menús y nuestros nuevos íconos
+import { RadialMenu, RadialMenuHome } from '../ui/RadialMenu';
 import { DropdownButton } from '../ui/DropdownButton';
+import { IconRadial, IconBusinessConfig, IconRocket, IconList } from '../ui/Icons';
 
 export default function Sandbox() {
   
@@ -12,32 +13,28 @@ export default function Sandbox() {
     router.replace('/(auth)/login');
   };
 
+  const handleGoToVistaUnUI = () => {
+    // Usamos push para navegar y poder regresar con la flecha
+    router.push('/vistaUnUI');
+  };
+
   return (
-    // Usamos ScrollView para que si los componentes no caben en la pantalla, podamos bajar
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.title}>Sandbox | Variantes UI</Text>
       
       {/* Área donde agrupamos los Botones Desplegables (Acordeones) */}
       <View style={styles.accordionArea}>
         
-        {/* ====================================================================
-            ⚠️ AQUÍ ESTÁ EL CAMBIO PRINCIPAL (De acuerdo a tu imagen):
-            Inyectamos la cuadrícula de RadialMenus DENTRO de este Acordeón.
-            ==================================================================== */}
+        {/* Acordeón de Menús Radiales con ícono personalizado */}
         <DropdownButton 
-          title="💼 RadialMenu's (Tus Menús)" 
-          variant="card" // Variante con sombras y fondo blanco
+          title="RadialMenu's (Tus Menús)" 
+          variant="card" 
+          icon={<IconRadial size={22} color="#1e293b" />} // 🌟 Ícono Inyectado
         >
-          {/* Inyectamos un subtítulo explicativo dentro del acordeón 
-          */}
           <Text style={styles.dummyText}>
             A continuación, verás una cuadrícula (Grid) de tus Menús Radiales incrustada directamente en este espacio:
           </Text>
 
-          {/* ⚠️ GRID DE MENÚS RADIALES INCRUSTADO:
-              Tomamos la cuadrícula que estaba afuera en el sandbox anterior
-              y la pegamos aquí dentro. styles.gridArea_Internal es clave para que se vea bien.
-          */}
           <View style={styles.gridArea_Internal}>
             
             {/* Variante: AZUL */}
@@ -54,45 +51,33 @@ export default function Sandbox() {
               secondaryColor="rgb(0, 201, 87)"    /* --emerald */
             />
 
-            {/* Variante: CAFÉ */}
+            {/* Variante: NEGRO (Nuevo) */}
             <RadialMenu 
-              title="Café"
-              mainColor="rgb(92, 53, 25)"     /* --chocolate */
-              secondaryColor="rgb(145, 89, 25)"   /* --Cafeligth */
+              title="Negro"
+              mainColor="rgb(0, 0, 0)"        /* --pure-black */
+              secondaryColor="rgb(47, 79, 79)"    /* --slate-gray */
             />
 
-            {/* Variante: MORADO */}
-            <RadialMenu 
-              title="Morado"
-              mainColor="rgb(75, 0, 130)"     /* --indigo */
-              secondaryColor="rgb(153, 102, 204)" /* --amethyst */
-            />
-
-            {/* Variante: ROSA */}
-            <RadialMenu 
-              title="Rosa"
-              mainColor="rgb(255, 105, 180)"  /* --bubblegum */
-              secondaryColor="rgb(255, 182, 193)" /* --pastel-pink */
-            />
-
-            {/* 💎 NUEVO: VARIANTE GLOSSY PINK AÑADIDA ABAJO DE LOS DEMÁS 💎 */}
-            <RadialMenu 
-              title="Glossy Pink (Imagen)" 
-              isGlossyPink={true} 
-            />
+            {/* 🌟 NUESTRO MENÚ DINÁMICO E INTERACTIVO */}
+            <View style={{ width: '100%', alignItems: 'center', marginTop: 20 }}>
+              <Text style={[styles.dummyText, { fontWeight: 'bold', marginBottom: 15 }]}>
+                RadialMenuHome (Interactivo):
+              </Text>
+              <RadialMenuHome />
+            </View>
 
           </View>
         </DropdownButton>
       </View>
 
-      {/* =========================================
-          SECCIÓN 2: BOTONES DESPLEGABLES (ACORDEONES)
-          ========================================= */}
       <Text style={styles.sectionSubtitle}>2. Botones Desplegables (Acordeones)</Text>
       <View style={styles.accordionArea}>
         
-        {/* Variante 1: Card (Contiene texto e inputs) */}
-        <DropdownButton title="💼 Configuración del Negocio" variant="card">
+        <DropdownButton 
+          title="Configuración del Negocio" 
+          variant="card"
+          icon={<IconBusinessConfig size={20} color="#1e293b" />}
+        >
           <Text style={styles.dummyText}>Aquí puedes inyectar un formulario completo.</Text>
           <TextInput 
             style={styles.dummyInput} 
@@ -101,19 +86,25 @@ export default function Sandbox() {
           />
         </DropdownButton>
 
-        {/* Variante 2: Outline (Contiene un componente RadialMenu entero adentro) */}
-        <DropdownButton title="🚀 Proyectos Rápidos" variant="outline">
+        <DropdownButton 
+          title="Proyectos Rápidos" 
+          variant="outline"
+          icon={<IconRocket size={20} color="#1e293b" />}
+        >
           <Text style={styles.dummyText}>Mira cómo metimos un componente dentro de otro componente:</Text>
           <View style={{ alignItems: 'center', marginTop: 10 }}>
             <RadialMenu 
-              mainColor="rgb(47, 79, 79)" /* Charcoal */
-              secondaryColor="rgb(211, 211, 211)" /* Silver */
+              mainColor="rgb(47, 79, 79)" 
+              secondaryColor="rgb(211, 211, 211)" 
             />
           </View>
         </DropdownButton>
 
-        {/* Variante 3: Minimal (Contiene una lista simple) */}
-        <DropdownButton title="📋 Sub Elementos" variant="minimal">
+        <DropdownButton 
+          title="Sub Elementos" 
+          variant="minimal"
+          icon={<IconList size={20} color="#1e293b" />}
+        >
           <Text style={styles.listItem}>• Sub Elemento #1</Text>
           <Text style={styles.listItem}>• Sub Elemento #2</Text>
           <Text style={styles.listItem}>• Sub Elemento #3</Text>
@@ -121,9 +112,17 @@ export default function Sandbox() {
 
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleBackToLogin}>
-        <Text style={styles.logoutText}>Volver al Login</Text>
-      </TouchableOpacity>
+      {/* 🌟 Contenedor de Botones de Navegación */}
+      <View style={styles.buttonsContainer}>
+        <TouchableOpacity style={styles.navButton} onPress={handleGoToVistaUnUI}>
+          <Text style={styles.navButtonText}>Ir a VistaUnUI</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.logoutButton} onPress={handleBackToLogin}>
+          <Text style={styles.logoutText}>Volver al Login</Text>
+        </TouchableOpacity>
+      </View>
+
     </ScrollView>
   );
 }
@@ -154,26 +153,23 @@ const styles = StyleSheet.create({
   },
   gridArea: {
     width: '100%',
-    flexDirection: 'row', // Coloca los elementos uno al lado del otro
-    flexWrap: 'wrap',     // Si no caben en una fila, los pasa a la de abajo
-    justifyContent: 'space-evenly', // Distribuye el espacio uniformemente
+    flexDirection: 'row', 
+    flexWrap: 'wrap',     
+    justifyContent: 'space-evenly', 
     marginBottom: 30,
   },
   accordionArea: {
-    width: '90%', // Ocupa la mayor parte de la pantalla, perfecto para tablets
+    width: '90%', 
     marginBottom: 30,
   },
-  // ⚠️ NUEVO ESTILO: Cuadrícula interna para los RadialMenus DENTRO del acordeón
   gridArea_Internal: {
-    width: '100%', // Ocupa el 100% del ancho DISPONIBLE DENTRO DEL ACORDEÓN
-    flexDirection: 'row', // Coloca los elementos uno al lado del otro
-    flexWrap: 'wrap',     // Si no caben en una fila, los pasa a la de abajo (Importante)
-    justifyContent: 'space-evenly', // Distribuye el espacio uniformemente entre los menús
-    marginTop: 15, // Espacio arriba después del dummyText
-    paddingBottom: 15, // Pequeño espacio para que no corte el brillo del Glossy Pink
-    // Le quitamos el margin lateral grande que tenía la gridArea original para no chocar con los bordes del acordeón
+    width: '100%', 
+    flexDirection: 'row', 
+    flexWrap: 'wrap',     
+    justifyContent: 'space-evenly', 
+    marginTop: 15, 
+    paddingBottom: 15, 
   },
-  // --- Estilos de relleno para mostrar adentro de los acordeones ---
   dummyText: {
     color: '#475569',
     marginBottom: 10,
@@ -193,15 +189,36 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e2e8f0',
   },
+  buttonsContainer: {
+    width: '90%',
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  navButton: {
+    backgroundColor: 'rgb(15, 82, 186)', // Azul Cobalt
+    paddingVertical: 12,
+    paddingHorizontal: 25,
+    borderRadius: 8,
+    marginBottom: 15,
+    width: '80%',
+    alignItems: 'center',
+  },
+  navButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
   logoutButton: {
     backgroundColor: '#94a3b8',
     paddingVertical: 12,
     paddingHorizontal: 25,
     borderRadius: 8,
-    marginTop: 20,
+    width: '80%',
+    alignItems: 'center',
   },
   logoutText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontSize: 16,
   }
 });

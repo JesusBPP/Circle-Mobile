@@ -8,27 +8,27 @@ import {
   Platform, 
   UIManager 
 } from 'react-native';
-// Usamos los íconos que ya vienen preinstalados en el ecosistema Expo
-import { Ionicons } from '@expo/vector-icons'; 
+// 🌟 Importamos nuestra flecha desde la biblioteca centralizada
+import { IconChevronDown } from '../Icons'; 
 import { styles } from './styles';
 
-// Habilitamos las animaciones de Layout para Android (Requisito nativo)
 if (Platform.OS === 'android') {
   if (UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
   }
 }
 
-// Definimos las propiedades (Props)
 interface DropdownButtonProps {
   title: string;
   variant?: 'card' | 'outline' | 'minimal';
-  children: React.ReactNode; // ESTO ES LA MAGIA: Permite meter cualquier componente adentro
+  icon?: React.ReactNode; // 🌟 NUEVA PROP: Permite inyectar un ícono al lado del título
+  children: React.ReactNode; 
 }
 
 export const DropdownButton = ({ 
   title, 
-  variant = 'card', // 'card' será la variante por defecto
+  variant = 'card', 
+  icon, // Extraemos el ícono de las props
   children 
 }: DropdownButtonProps) => {
   
@@ -36,13 +36,8 @@ export const DropdownButton = ({
   const [animation] = useState(new Animated.Value(0));
 
   const toggleExpand = () => {
-    // 1. Configuramos la animación de expansión del layout
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    
-    // 2. Cambiamos el estado (para mostrar/ocultar hijos)
     setIsExpanded(!isExpanded);
-    
-    // 3. Animamos la rotación de la flechita
     Animated.timing(animation, {
       toValue: isExpanded ? 0 : 1,
       duration: 300,
@@ -50,13 +45,11 @@ export const DropdownButton = ({
     }).start();
   };
 
-  // Interpolamos el valor 0-1 a grados de rotación (0 a 180)
   const arrowRotation = animation.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '180deg'],
   });
 
-  // Elegimos el estilo del header dependiendo de la variante elegida
   const getHeaderStyle = () => {
     switch (variant) {
       case 'outline': return styles.headerOutline;
@@ -68,21 +61,23 @@ export const DropdownButton = ({
 
   return (
     <View style={styles.container}>
-      {/* EL BOTÓN (HEADER) */}
       <TouchableOpacity 
         style={[styles.headerBase, getHeaderStyle()]} 
         onPress={toggleExpand}
         activeOpacity={0.7}
       >
-        <Text style={styles.title}>{title}</Text>
+        {/* Contenedor para el Ícono y el Título */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          {icon} 
+          <Text style={styles.title}>{title}</Text>
+        </View>
         
         <Animated.View style={{ transform: [{ rotate: arrowRotation }] }}>
-          {/* Ícono de flecha hacia abajo */}
-          <Ionicons name="chevron-down" size={20} color="#64748b" />
+          {/* Usamos el ícono desde nuestra biblioteca */}
+          <IconChevronDown size={20} color="#64748b" />
         </Animated.View>
       </TouchableOpacity>
 
-      {/* EL CONTENIDO DESPLEGABLE (CHILDREN) */}
       {isExpanded && (
         <View style={styles.contentArea}>
           {children}

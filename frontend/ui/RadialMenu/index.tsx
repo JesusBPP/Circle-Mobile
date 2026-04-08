@@ -1,131 +1,184 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Íconos de Expo
-import { styles } from './styles'; // 1. Importamos nuestros estilos estáticos
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, Animated, Easing } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { styles } from './styles';
 
-// 2. Definimos las Props (Propiedades) que este componente puede recibir.
+// 🌟 Importamos los nuevos íconos
+import { 
+  IconRise, IconBulb, IconContacts, IconContainer, IconControl, 
+  IconPieChart, IconProduct, IconShop, IconSmile, IconStar, 
+  IconThunderbolt, IconLocation, IconTool, Icon500px, IconAreaGraph 
+} from '../Icons';
+
 interface RadialMenuProps {
   mainColor?: string;
   secondaryColor?: string;
   title?: string;
-  isGlossyPink?: boolean; // NUEVA PROP: Activa el estilo brillante
 }
 
+// ==========================================
+// --- COMPONENTE 1: RadialMenu (Plano) ---
+// ==========================================
 export const RadialMenu = ({ 
-  mainColor = 'rgb(0, 71, 171)', // Azul Cobalt (Valor por defecto)
-  secondaryColor = 'rgb(135, 206, 235)', // Azul Sky (Valor por defecto)
-  title,
-  isGlossyPink = false // Por defecto es false para que los demás se vean planos
+  mainColor = 'rgb(0, 71, 171)', secondaryColor = 'rgb(135, 206, 235)', title 
 }: RadialMenuProps) => { 
-  
-  // 3. Estado local: Controla si el menú está abierto o cerrado
   const [isOpen, setIsOpen] = useState(false);
   const animation = useState(new Animated.Value(0))[0];
 
   const toggleMenu = () => {
-    const toValue = isOpen ? 0 : 1;
-    Animated.spring(animation, {
-      toValue,
-      friction: 5,
-      useNativeDriver: true,
-    }).start();
+    Animated.spring(animation, { toValue: isOpen ? 0 : 1, friction: 5, useNativeDriver: true }).start();
     setIsOpen(!isOpen);
   };
 
-  // 4. Lógica de animación para los 5 botones (Arco de la imagen)
-  const option1Style = {
-    transform: [
-      { scale: animation },
-      { translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [0, -70] }) },
-      { translateX: animation.interpolate({ inputRange: [0, 1], outputRange: [0, -90] }) }
-    ]
-  };
-
-  const option2Style = {
-    transform: [
-      { scale: animation },
-      { translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [0, -110] }) },
-      { translateX: animation.interpolate({ inputRange: [0, 1], outputRange: [0, -45] }) }
-    ]
-  };
-
-  const option3Style = {
-    transform: [
-      { scale: animation },
-      { translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [0, -130] }) },
-    ]
-  };
-
-  const option4Style = {
-    transform: [
-      { scale: animation },
-      { translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [0, -110] }) },
-      { translateX: animation.interpolate({ inputRange: [0, 1], outputRange: [0, 45] }) }
-    ]
-  };
-
-  const option5Style = {
-    transform: [
-      { scale: animation },
-      { translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [0, -70] }) },
-      { translateX: animation.interpolate({ inputRange: [0, 1], outputRange: [0, 90] }) }
-    ]
-  };
-
-  // Función para renderizar los botones secundarios dependiendo del estilo
-  const renderSecondaryButton = (style: any, text: string, iconName: any) => {
-    if (isGlossyPink) {
-      return (
-        <Animated.View style={[styles.secondaryButton, styles.secondaryButtonGlossy_Outer, style]}>
-          <View style={styles.secondaryButtonGlossy_DarkRing}>
-            <Ionicons name={iconName} size={20} color="#FFFFFF" />
-            <View style={styles.secondaryButtonGlossy_Glare} />
-          </View>
-        </Animated.View>
-      );
-    } else {
-      return (
-        <Animated.View style={[styles.secondaryButton, style, { backgroundColor: secondaryColor }]}>
-          <Text style={styles.buttonText}>{text}</Text>
-        </Animated.View>
-      );
-    }
-  };
+  const opt1 = { transform: [{ scale: animation }, { translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [0, -60] }) }, { translateX: animation.interpolate({ inputRange: [0, 1], outputRange: [0, -50] }) }] };
+  const opt2 = { transform: [{ scale: animation }, { translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [0, -75] }) }] };
+  const opt3 = { transform: [{ scale: animation }, { translateY: animation.interpolate({ inputRange: [0, 1], outputRange: [0, -60] }) }, { translateX: animation.interpolate({ inputRange: [0, 1], outputRange: [0, 50] }) }] };
 
   return (
-    <View style={[styles.container, isGlossyPink && styles.containerGlossy]}>
-      {/* Mostramos el título si es que nos pasaron uno en las props */}
+    <View style={styles.container}>
       {title && <Text style={styles.variantTitle}>{title}</Text>}
+      <Animated.View style={[styles.secondaryButton, opt1, { backgroundColor: secondaryColor }]}><Text style={styles.buttonText}>1</Text></Animated.View>
+      <Animated.View style={[styles.secondaryButton, opt2, { backgroundColor: secondaryColor }]}><Text style={styles.buttonText}>2</Text></Animated.View>
+      <Animated.View style={[styles.secondaryButton, opt3, { backgroundColor: secondaryColor }]}><Text style={styles.buttonText}>3</Text></Animated.View>
+      <TouchableOpacity style={[styles.mainButton, { backgroundColor: mainColor }]} onPress={toggleMenu} activeOpacity={0.8}>
+        <Text style={styles.mainButtonText}>{isOpen ? 'X' : 'O'}</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
-      {/* Opciones secundarias */}
-      {renderSecondaryButton(option1Style, "1", "settings-outline")}
-      {renderSecondaryButton(option2Style, "2", "person-outline")}
-      {renderSecondaryButton(option3Style, "3", "chatbubble-ellipses-outline")}
-      {/* Las opciones 4 y 5 solo se mostrarán visiblemente si es el menú Glossy o si ajustamos el plano más adelante */}
-      {isGlossyPink && renderSecondaryButton(option4Style, "4", "location-outline")}
-      {isGlossyPink && renderSecondaryButton(option5Style, "5", "notifications-outline")}
+// ===============================================================
+// 🔄 COMPONENTE 2: RadialMenuHome (Interactivo y Animado)
+// ===============================================================
+export const RadialMenuHome = () => {
+  // Estados para la interacción del menú
+  const [isOpen, setIsOpen] = useState(false);
+  const menuAnim = useRef(new Animated.Value(0)).current;
 
-      {/* Botón Central */}
-      {isGlossyPink ? (
-        <View style={styles.mainButtonGlossy_Outer}>
-          <TouchableOpacity 
-            style={styles.mainButtonGlossy_Ring} 
-            onPress={toggleMenu} 
-            activeOpacity={0.8}
-          >
-            <Text style={styles.mainButtonTextGlossy}>{isOpen ? '✕' : '⚪'}</Text>
-            <View style={styles.mainButtonGlossy_Glare} />
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity 
-          style={[styles.mainButton, { backgroundColor: mainColor }]} 
-          onPress={toggleMenu} 
-          activeOpacity={0.8}
-        >
-          <Text style={styles.mainButtonText}>{isOpen ? 'X' : 'O'}</Text>
-        </TouchableOpacity>
-      )}
+  // Estados para la animación de los aros y los íconos
+  const spinValue = useRef(new Animated.Value(0)).current;
+  const loopRef = useRef<Animated.CompositeAnimation | null>(null);
+  
+  const iconSequence = [
+    IconRise, IconBulb, IconContacts, IconContainer, IconControl, 
+    IconPieChart, IconProduct, IconShop, IconSmile, IconStar, 
+    IconThunderbolt, IconLocation, IconTool, Icon500px, IconAreaGraph
+  ];
+
+  const [shapeIndex, setShapeIndex] = useState(() => Math.floor(Math.random() * iconSequence.length));
+
+  // 1. Controlamos la rotación y el temporizador de íconos según si está abierto o cerrado
+  useEffect(() => {
+    if (!isOpen) {
+      // 🛠️ FIX: Reiniciamos el valor a 0 antes de comenzar.
+      // Así garantizamos que siempre recorra toda la distancia en los 3000ms originales
+      // solucionando el problema de que se volviera cada vez más lento.
+      spinValue.setValue(0);
+
+      // 🟢 Si está cerrado: Inicia rotación y temporizador
+      loopRef.current = Animated.loop(
+        Animated.timing(spinValue, {
+          toValue: 1,
+          duration: 3000, 
+          easing: Easing.linear, 
+          useNativeDriver: true, 
+        })
+      );
+      loopRef.current.start();
+
+      const shapeInterval = setInterval(() => {
+        setShapeIndex((prevIndex) => (prevIndex + 1) % iconSequence.length);
+      }, 1800);
+
+      return () => {
+        clearInterval(shapeInterval);
+        loopRef.current?.stop();
+      };
+    } else {
+      // 🛑 Si está abierto: Detenemos la animación de giro
+      loopRef.current?.stop();
+    }
+  }, [isOpen, spinValue]);
+
+  // 2. Acción al presionar el botón central
+  const handleToggle = () => {
+    const nextState = !isOpen;
+    setIsOpen(nextState);
+    // Animación de despliegue de las opciones negras
+    Animated.spring(menuAnim, {
+      toValue: nextState ? 1 : 0,
+      friction: 5,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // --- CÁLCULOS DE ROTACIÓN (Respetando tus ajustes) ---
+  const spinClockwiseSlow = spinValue.interpolate({ inputRange: [0, 0.8], outputRange: ['0deg', '290deg'] });
+  const spinCounterClockwiseFast = spinValue.interpolate({ inputRange: [0, 1], outputRange: ['360deg', '-360deg'] });
+  const spinClockwiseFast = spinValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '720deg'] });
+
+  // --- CÁLCULOS DE DESPLIEGUE (Sub-opciones negras formando un arco superior) ---
+  const opt1 = { transform: [{ scale: menuAnim }, { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] }) }, { translateX: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -95] }) }] };
+  const opt2 = { transform: [{ scale: menuAnim }, { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -75] }) }, { translateX: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -60] }) }] };
+  const opt3 = { transform: [{ scale: menuAnim }, { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -95] }) }] };
+  const opt4 = { transform: [{ scale: menuAnim }, { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -75] }) }, { translateX: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 60] }) }] };
+  const opt5 = { transform: [{ scale: menuAnim }, { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] }) }, { translateX: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 95] }) }] };
+
+  // --- RENDERIZADO DEL ÍCONO CENTRAL ---
+  const renderCenterShape = () => {
+    const iconColor = "rgb(184, 134, 11)"; // Tu color configurado
+    const CurrentIcon = iconSequence[shapeIndex];
+    return <CurrentIcon size={26} color={iconColor} />;
+  };
+
+  // --- RENDERIZADO DE LAS OPCIONES SECUNDARIAS ---
+  const renderSecondaryOption = (style: any, iconName: any) => (
+    <Animated.View style={[styles.secondaryMenuNode, style]}>
+      <Ionicons name={iconName} size={20} color="#FFFFFF" />
+    </Animated.View>
+  );
+
+  return (
+    <View style={styles.rotatingContainer}>
+      
+      {/* 🌑 SUB-OPCIONES (Aparecen al hacer clic) */}
+      {renderSecondaryOption(opt1, "settings-outline")}
+      {renderSecondaryOption(opt2, "person-outline")}
+      {renderSecondaryOption(opt3, "chatbubble-outline")}
+      {renderSecondaryOption(opt4, "location-outline")}
+      {renderSecondaryOption(opt5, "close-outline")}
+
+      {/* ⭕ CÍRCULO EXTERIOR AZUL */}
+      {/* Si isOpen es true, rellenamos las partes transparentes con su color para completarlo */}
+      <Animated.View style={[
+        styles.circleOutermost, 
+        { transform: [{ rotate: spinClockwiseSlow }] },
+        isOpen && { borderBottomColor: 'rgb(15, 82, 186)', borderRightColor: 'rgb(15, 82, 186)' }
+      ]} />
+
+      {/* ⭕ CÍRCULO MEDIO VERDE */}
+      <Animated.View style={[
+        styles.circleOuter, 
+        { transform: [{ rotate: spinCounterClockwiseFast }] },
+        isOpen && { borderTopColor: 'rgb(34, 139, 34)', borderLeftColor: 'rgb(34, 139, 34)' }
+      ]} />
+      
+      {/* ⭕ CÍRCULO INTERIOR NEGRO */}
+      <Animated.View style={[
+        styles.circleInner, 
+        { transform: [{ rotate: spinClockwiseFast }] },
+        isOpen && { borderBottomColor: 'rgb(11, 11, 11)', borderLeftColor: 'rgb(11, 11, 11)' }
+      ]} />
+
+      {/* 🔘 BOTÓN CENTRAL INTERACTIVO */}
+      <TouchableOpacity 
+        style={styles.centerTouchable}
+        onPress={handleToggle}
+        activeOpacity={0.8}
+      >
+        {renderCenterShape()}
+      </TouchableOpacity>
+
     </View>
   );
 };
