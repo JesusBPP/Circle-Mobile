@@ -6,3 +6,7 @@ pip install Pillow
 ******** Frontend ********
 **************************
 npm install axios
+
+npx expo install expo-linear-gradient
+
+npx expo install @expo/vector-icons

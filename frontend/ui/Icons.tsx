@@ -1,7 +1,6 @@
 import React from 'react';
 // 🌟 Importamos las familias adicionales de íconos que trae Expo
-import { Ionicons, AntDesign, EvilIcons, Entypo } from '@expo/vector-icons';
-
+import { Ionicons, AntDesign, EvilIcons, Entypo, Feather, MaterialIcons } from '@expo/vector-icons';
 /**
  * 📄 DESCRIPCIÓN DEL ARCHIVO: Icons.tsx
  * ----------------------------------------------------------------------------------
@@ -36,9 +35,33 @@ export const IconAreaGraph = (props: any) => <Entypo name="area-graph" {...props
 // =========================================================
 // --- ÍCONOS DE INTERFAZ GENERAL (Sandbox y Acordeones) ---
 // =========================================================
-// Ícono perfecto para representar un menú radial o algo circular
 export const IconRadial = (props: any) => <Ionicons name="aperture-outline" {...props} />; 
 export const IconBusinessConfig = (props: any) => <Ionicons name="briefcase-outline" {...props} />;
 export const IconRocket = (props: any) => <Ionicons name="rocket-outline" {...props} />;
 export const IconList = (props: any) => <Ionicons name="list-outline" {...props} />;
 export const IconChevronDown = (props: any) => <Ionicons name="chevron-down" {...props} />;
+export const IconChevronRight = (props: any) => <Ionicons name="chevron-forward" {...props} />;
+export const IconLogout = (props: any) => <Ionicons name="log-out-outline" {...props} />;
+export const IconSandbox = (props: any) => <Ionicons name="construct-outline" {...props} />;
+
+// --- ÍCONOS PARA LA BIBLIOTECA DE BOTONES ---
+export const IconMusic = (props: any) => <Ionicons name="musical-notes" {...props} />;
+export const IconPower = (props: any) => <Ionicons name="power" {...props} />;
+export const IconPlus = (props: any) => <AntDesign name="plus" {...props} />;
+export const IconDownload = (props: any) => <Feather name="download" {...props} />;
+export const IconHeart = (props: any) => <Ionicons name="heart" {...props} />;
+export const IconGear = (props: any) => <Ionicons name="settings-sharp" {...props} />;
+export const IconSearch = (props: any) => <Ionicons name="search" {...props} />;
+export const IconHome = (props: any) => <Ionicons name="home" {...props} />;
+export const IconWifi = (props: any) => <Ionicons name="wifi" {...props} />;
+export const IconBluetooth = (props: any) => <Ionicons name="bluetooth" {...props} />;
+export const IconShield = (props: any) => <Ionicons name="shield-checkmark" {...props} />;
+export const IconAirplane = (props: any) => <Ionicons name="airplane" {...props} />;
+export const IconData = (props: any) => <MaterialIcons name="cell-wifi" {...props} />;
+export const IconLogin = (props: any) => <Ionicons name="log-in-outline" {...props} />;
+
+// 🌟 NUEVOS ÍCONOS PARA DESPLEGABLES Y AMBIENTACIÓN
+// Ícono para representar "Botones"
+export const IconButtonLayout = (props: any) => <Ionicons name="browsers-outline" {...props} />; 
+// Ícono para representar "Cambio de Fondo/Contraste"
+export const IconContrast = (props: any) => <Ionicons name="contrast-outline" {...props} />;

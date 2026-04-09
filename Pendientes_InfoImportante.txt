@@ -7,11 +7,19 @@ PROYECTO: CIRCLE - REGISTRO DE PENDIENTES
 [x] 5. Crear archivo (.dbml) con la arquitectura de la base de datos.
 [x] 6. Crear la base de datos en PostgreSQL a partir del diseño DBML, modelos ORM (.py) + Alembic.
 [x] 7. Preparar tecnologías para visualizar el frontend (Emuladores/Simuladores móviles).
-[ ] 8. Crear biblioteca de componentes básicos (components/ui)
+[X] 8. Crear biblioteca de componentes básicos (components/ui)
 [X] 9. Crear pantalla de pruebas (app/sandbox.tsx).
 [X] 10. Crear interfaz visual de Login (app/(auth)/login.tsx).
 [X] 11. Conectar Login con el Backend.
-[ ] 12. Crear primer componente de la bliblioteca | Pantalla catalogo Inicio_Negocios
+[X] 12. Crear primer componente de la bliblioteca | Pantalla catalogo Inicio_Negocios
+[X] 13. Creación de RadialMenu para el Home de negocios
+[X] 14. Creación de botones
+[ ] 15. Creación de gráficos
+[ ] 16. Creación de tablas
+[ ] 17. Creación de inputs
+[X] 18. Creación de DropdownButton
+[X] 19. Creación de fondos de pantalla
+
 _____________________________________________________________________
             ANOTACIONES IMPORTANTES
 
@@ -71,6 +79,14 @@ CIRCLE Project Color Palette - Guía de Tonalidades RGB
 --indigo: rgb(75, 0, 130);
 --violet: rgb(138, 43, 226);
 --royal-purple: rgb(120, 0, 150);
+
+/* GOLD */
+--Dorado Clásico: rgb(255, 215, 0);
+--Dorado Metálico: rgb(212, 175, 55);
+--Oro Viejo (Dark Gold): rgb(184, 134, 11)
+--Dorado Claro (Light Gold): rgb(255, 236, 139)
+--Oro Rosa (Rose Gold): rgb(183, 110, 121)
+--Dorado Cálido (Golden Yellow): rgb(255, 223, 0)
 _____________________________________________________________________
 
 

@@ -88,7 +88,7 @@ export const RadialMenuHome = () => {
 
       const shapeInterval = setInterval(() => {
         setShapeIndex((prevIndex) => (prevIndex + 1) % iconSequence.length);
-      }, 1800);
+      }, 1500);
 
       return () => {
         clearInterval(shapeInterval);

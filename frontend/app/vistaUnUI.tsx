@@ -1,62 +1,118 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 
-// 🌟 Importamos nuestro componente final
-import { RadialMenuHome } from '../ui/RadialMenu';
+// 🌟 Importamos el nuevo componente FondoManager y los botones UI necesarios
+import { FondoManager, TipoFondo } from '../ui/Fondo';
+import { ButtonCleanUI } from '../ui/Button'; 
+// Íconos para los nuevos botones
+import { IconContrast, IconSandbox, IconLogout } from '../ui/Icons';
 
 export default function VistaUnUI() {
   
-  const handleLogout = () => {
-    router.replace('/(auth)/login');
+  // 🌟 Estado local para controlar cuál fondo está activo
+  // Arranca en 'default' (gris claro)
+  const [backgroundType, setBackgroundType] = useState<TipoFondo>('default');
+
+  // Funciones de navegación
+  const handleLogout = () => router.replace('/(auth)/login');
+  const handleGoToSandbox = () => router.push('/sandbox');
+
+  // 🌟 Lógica para ciclar entre los 3 fondos (Default -> Dark -> Pattern -> Default...)
+  const cycleBackground = () => {
+    switch (backgroundType) {
+      case 'default':
+        setBackgroundType('dark');
+        break;
+      case 'dark':
+        setBackgroundType('pattern');
+        break;
+      case 'pattern':
+      default:
+        setBackgroundType('default');
+        break;
+    }
   };
 
-  const handleGoToSandbox = () => {
-    // Usamos push para apilar la pantalla y poder volver fácilmente
-    router.push('/sandbox');
+  // Obtenemos el texto para el botón basado en el fondo actual
+  const getButtonText = () => {
+    switch (backgroundType) {
+      case 'dark': return 'Cambiar a Fondo Patrón';
+      case 'pattern': return 'Cambiar a Fondo Default';
+      default: return 'Cambiar a Fondo Oscuro';
+    }
   };
+
+  // Determinamos el color de los textos según el fondo
+  const isDarkBackground = backgroundType === 'dark';
+  const titleColor = isDarkBackground ? '#f8fafc' : '#1e293b';
+  const subtitleColor = isDarkBackground ? '#94a3b8' : '#64748b';
 
   return (
-    <View style={styles.container}>
+    // 🌟 ENVOLVEMOS TODA LA PANTALLA CON EL FONDOMANAGER
+    <FondoManager tipoFondo={backgroundType}>
       
-      <View style={styles.header}>
-        <Text style={styles.title}>Menú Principal</Text>
-        <Text style={styles.subtitle}>Variante: RadialMenuHome Dinámico</Text>
+      {/* Contenedor principal para centrar el contenido sobre el fondo */}
+      <View style={styles.container}>
+        
+        {/* Encabezado */}
+        <View style={styles.header}>
+          {/* Inyectamos el color dinámicamente según el fondo */}
+          <Text style={[styles.title, { color: titleColor }]}>Entorno UI</Text>
+          <Text style={[styles.subtitle, { color: subtitleColor }]}>Lienzo de Ambientación Global</Text>
+        </View>
+
+        {/* 🌟 SECCIÓN CENTRAL (Limpia, sólo el botón de cambio de fondo) */}
+        <View style={styles.componentShowcase}>
+          
+          <Text style={[styles.infoText, { color: subtitleColor, marginBottom: 15 }]}>
+            En esta pantalla limpia, probaremos la ambientación global de la aplicación.
+          </Text>
+
+          {/* 🌟 USAMOS UN BOTÓN UI PARA CAMBIAR EL FONDO (Estilo CleanUI) */}
+          <View style={styles.buttonsContainer_Internal}>
+            <ButtonCleanUI 
+              title={getButtonText()} 
+              iconLeft={<IconContrast size={18} color="#fff"/>} 
+              onPress={cycleBackground} // Activamos la lógica de ciclado
+              // VERDE: Forest Green (De la paleta Circle)
+              mainColor="rgb(34, 139, 34)" /* --forest-green */
+            />
+          </View>
+        </View>
+
+        {/* 🌟 CONTENEDOR DE NAVEGACIÓN (Reemplazada por botones UI) */}
+        <View style={styles.buttonsContainer_Fixed}>
+          {/* Botón para ir al Sandbox (Azul Sapphire) */}
+          <ButtonCleanUI 
+            title="Ir a Sandbox (Biblioteca UI)" 
+            iconLeft={<IconSandbox size={18} color="#fff"/>} 
+            onPress={handleGoToSandbox}
+            // AZUL: Sapphire (De la paleta Circle)
+            mainColor="rgb(15, 82, 186)" /* --sapphire */
+          />
+
+          {/* Botón para cerrar sesión (Slate Gray) */}
+          <ButtonCleanUI 
+            title="Cerrar Sesión" 
+            iconLeft={<IconLogout size={18} color="#fff"/>} 
+            onPress={handleLogout}
+            // GRIS: Slate Gray (De la paleta Circle)
+            mainColor="rgb(47, 79, 79)" /* --slate-gray */
+          />
+        </View>
+
       </View>
-
-      <View style={styles.componentShowcase}>
-        {/* Renderizamos el menú interactivo */}
-        <RadialMenuHome />
-      </View>
-
-      {/* Contenedor inferior para agrupar los botones */}
-      <View style={styles.buttonsContainer}>
-        {/* NUEVO BOTÓN: Navega al Sandbox */}
-        <TouchableOpacity 
-          style={styles.sandboxButton} 
-          onPress={handleGoToSandbox}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.sandboxButtonText}>Ir a Sandbox</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.logoutButton} 
-          onPress={handleLogout}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.logoutText}>Volver al Login</Text>
-        </TouchableOpacity>
-      </View>
-
-    </View>
+    </FondoManager>
   );
 }
 
 const styles = StyleSheet.create({
+  // Contenedor interno que ocupará toda la pantalla pero tiene padding vertical
   container: {
     flex: 1,
-    backgroundColor: 'rgb(250, 250, 250)', // Tu fondo configurado
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'space-between', 
     paddingVertical: 50,
@@ -68,12 +124,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1e293b', // Color oscuro para fondo claro
     letterSpacing: 1,
   },
   subtitle: {
     fontSize: 14,
-    color: '#64748b', 
     marginTop: 8,
   },
   componentShowcase: {
@@ -81,43 +135,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     width: '100%',
+    paddingHorizontal: 30,
   },
-  buttonsContainer: {
+  infoText: {
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  buttonsContainer_Internal: {
     width: '100%',
     alignItems: 'center',
-    paddingBottom: 10,
   },
-  sandboxButton: {
-    backgroundColor: 'rgb(15, 82, 186)', // Usamos el Azul Sapphire de tu paleta
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25, 
-    marginBottom: 15,
-    width: '70%', // Ancho uniforme para que se vea ordenado
+  // Contenedor inferior de botones de navegación (Reemplazado por gap)
+  buttonsContainer_Fixed: {
+    width: '80%',
     alignItems: 'center',
-    elevation: 3, // Ligera sombra en Android
-    shadowColor: '#000', // Sombra en iOS
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 3,
-  },
-  sandboxButtonText: {
-    color: '#fff', 
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  logoutButton: {
-    backgroundColor: '#94a3b8', 
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25, 
-    marginBottom: 10,
-    width: '70%',
-    alignItems: 'center',
-  },
-  logoutText: {
-    color: '#fff', 
-    fontWeight: 'bold',
-    fontSize: 16,
+    paddingVertical: 15,
+    gap: 12, // Espacio uniforme entre los botones CleanUI
   }
 });

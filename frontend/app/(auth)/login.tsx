@@ -13,14 +13,16 @@ import {
   Dimensions,
   Alert
 } from 'react-native';
-import { router } from 'expo-router'; // <-- Importamos el router para cambiar de pantalla
+import { router } from 'expo-router'; 
 
 import { LoginAnimation } from '../../animations/loginAnimation';
-import { loginUser } from '../../features/auth/authService'; // <-- Importamos nuestro servicio
+import { loginUser } from '../../features/auth/authService'; 
+// 🌟 Importamos el ícono de Login desde nuestra biblioteca centralizada
+import { IconLogin } from '../../ui/Icons'; 
 
 const { height } = Dimensions.get('window');
 
-// --- COMPONENTES GENÉRICOS ---
+// --- COMPONENTE DE INPUT ---
 const GenericInput = ({ placeholder, value, onChangeText, secureTextEntry = false }: any) => (
   <View style={styles.inputContainer}>
     <TextInput
@@ -35,14 +37,25 @@ const GenericInput = ({ placeholder, value, onChangeText, secureTextEntry = fals
   </View>
 );
 
-const GenericButton = ({ title, onPress, isLoading = false }: any) => (
+// ==========================================
+// 🌟 NUEVO BOTÓN DE LOGIN (Estilo Neomórfico)
+// ==========================================
+const LoginNeoButton = ({ title, onPress, isLoading = false }: any) => (
   <TouchableOpacity 
-    style={[styles.button, isLoading && styles.buttonDisabled]} 
+    style={[styles.neoButton, isLoading && styles.buttonDisabled]} 
     onPress={onPress} 
     disabled={isLoading}
-    activeOpacity={0.8}
+    activeOpacity={0.7}
   >
-    {isLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{title}</Text>}
+    {isLoading ? (
+      // Cambiamos el color del indicador a azul para que resalte en el fondo blanco
+      <ActivityIndicator color="rgb(0, 71, 171)" /> 
+    ) : (
+      <>
+        <IconLogin size={24} color="rgb(0, 71, 171)" />
+        <Text style={styles.neoButtonText}>{title}</Text>
+      </>
+    )}
   </TouchableOpacity>
 );
 
@@ -65,17 +78,12 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      // 1. Llamamos a FastAPI a través de nuestro servicio
       const userData = await loginUser(email, password);
-      
-      // 2. Si todo sale bien, damos la bienvenida y cambiamos de pantalla
       console.log("Datos recibidos del backend:", userData);
       
-      // router.replace borra el historial para que el usuario no pueda volver al login dándole al botón de "Atrás"
       router.replace('/vistaUnUI'); 
 
     } catch (error: any) {
-      // 3. Si falla (contraseña incorrecta), mostramos el error que mandó FastAPI
       Alert.alert("Error de Acceso", error.message);
     } finally {
       setIsLoading(false);
@@ -103,7 +111,9 @@ export default function Login() {
             <View style={styles.formFields}>
               <GenericInput placeholder="Correo electrónico" value={email} onChangeText={setEmail} />
               <GenericInput placeholder="Contraseña" value={password} onChangeText={setPassword} secureTextEntry={true} />
-              <GenericButton title="Iniciar Sesión" onPress={handleLoginAttempt} isLoading={isLoading} />
+              
+              {/* 🌟 Usamos nuestro nuevo botón estilizado */}
+              <LoginNeoButton title="INICIAR SESIÓN" onPress={handleLoginAttempt} isLoading={isLoading} />
             </View>
           </View>
 
@@ -133,10 +143,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15, justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0',
   },
   input: { fontSize: 16, color: '#1e293b' },
-  button: {
-    width: '100%', height: 48, backgroundColor: '#1d4ed8', borderRadius: 12,
-    justifyContent: 'center', alignItems: 'center', marginTop: 5, elevation: 3,
+  
+  // 🌟 ESTILOS DEL NUEVO BOTÓN
+  neoButton: {
+    width: '100%', 
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 10,
+    // Efecto underGlow (luz desde abajo)
+    shadowColor: 'rgb(0, 71, 171)', // Cobalt Blue
+    shadowOffset: { width: 0, height: 0 }, // Offset en 0 centra la luz
+    shadowOpacity: 0.8,
+    shadowRadius: 15,
+    elevation: 15, // Sombra para Android
   },
-  buttonDisabled: { backgroundColor: '#93c5fd' },
-  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' },
+  buttonDisabled: { 
+    opacity: 0.6 
+  },
+  neoButtonText: { 
+    color: 'rgb(0, 71, 171)', 
+    fontSize: 16, 
+    fontWeight: 'bold',
+    letterSpacing: 1,
+    marginLeft: 10, // Espacio entre el ícono y el texto
+    textShadowColor: 'rgba(0, 71, 171, 0.4)', // Sutil brillo en el texto
+    textShadowRadius: 6,
+  },
 });
