@@ -13,23 +13,21 @@ export default function RootLayout() {
         
         <Stack.Screen name="index" options={{ headerShown: false }} />
         
-        {/* Pantalla de Laboratorio (Sandbox) */}
         <Stack.Screen name="sandbox" options={{ title: 'Patio de Pruebas Circle' }} />
 
-        {/* 🌟 NUEVA PANTALLA: Vista de un componente individual */}
         <Stack.Screen 
           name="vistaUnUI" 
-          options={{ 
-            headerShown: true, // Mostramos la barra superior para poder regresar fácilmente
-            title: 'Detalle de Componente', // El título que aparecerá arriba
-            headerBackTitle: 'Atrás' // Texto de la flecha de regreso en iOS
-          }} 
+          options={{ headerShown: true, title: 'Detalle de Componente', headerBackTitle: 'Atrás' }} 
         />
 
-        {/* Grupo de Autenticación */}
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        {/* 🌟 Pantalla global del Catálogo de Soluciones */}
+        <Stack.Screen 
+          name="menuSoluciones" 
+          options={{ headerShown: true, title: 'Catálogo de Soluciones', headerBackTitle: 'Atrás' }} 
+        />
 
-        {/* Grupo de la App principal (Tabs) */}
+        {/* Grupos de Enrutamiento Automático */}
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />

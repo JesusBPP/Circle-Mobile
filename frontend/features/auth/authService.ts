@@ -9,7 +9,8 @@ export const loginUser = async (correo: string, contrasena: string) => {
       contrasena: contrasena,
     });
     
-    // Si la API responde con éxito, devolvemos los datos (Ej: El token de acceso)
+    // 🌟 Si la API responde con éxito, devolvemos los datos.
+    // Esto incluye: access_token, id_usuario, nombre y es_admin
     return response.data;
 
   } catch (error: any) {

@@ -52,3 +52,11 @@ class UsuarioResponse(UsuarioBase):
     fecha_registro: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+# Schema específico para la respuesta del Dashboard
+class DashboardResponse(BaseModel):
+    nombre_usuario: str
+    nombre_negocio: str
+    nombre_sucursal: str
+
+    model_config = ConfigDict(from_attributes=True)

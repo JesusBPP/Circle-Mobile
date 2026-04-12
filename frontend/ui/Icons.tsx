@@ -1,6 +1,6 @@
 import React from 'react';
 // 🌟 Importamos las familias adicionales de íconos que trae Expo
-import { Ionicons, AntDesign, EvilIcons, Entypo, Feather, MaterialIcons } from '@expo/vector-icons';
+import { Ionicons, AntDesign, EvilIcons, Entypo, Feather, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 /**
  * 📄 DESCRIPCIÓN DEL ARCHIVO: Icons.tsx
  * ----------------------------------------------------------------------------------
@@ -8,10 +8,13 @@ import { Ionicons, AntDesign, EvilIcons, Entypo, Feather, MaterialIcons } from '
  * ----------------------------------------------------------------------------------
  */
 
-// --- Figuras Geométricas (Mantenidas por si acaso) ---
+// --- Figuras Geométricas ---
 export const IconCircleShape = (props: any) => <Ionicons name="ellipse" {...props} />;
 export const IconSquareShape = (props: any) => <Ionicons name="square" {...props} />;
 export const IconTriangleShape = (props: any) => <Ionicons name="triangle" {...props} />;
+// 🌟 Hexágono nativo desde MaterialCommunityIcons
+export const IconHexagon = (props: any) => <MaterialCommunityIcons name="hexagon" {...props} />;
+export const IconHexagonOutline = (props: any) => <MaterialCommunityIcons name="hexagon-outline" {...props} />;
 
 // =========================================================
 // --- SECUENCIA DE ÍCONOS PARA ANIMACIÓN (Círculos) ---
@@ -33,7 +36,7 @@ export const Icon500px = (props: any) => <Entypo name="500px" {...props} />;
 export const IconAreaGraph = (props: any) => <Entypo name="area-graph" {...props} />;
 
 // =========================================================
-// --- ÍCONOS DE INTERFAZ GENERAL (Sandbox y Acordeones) ---
+// --- ÍCONOS DE INTERFAZ GENERAL ---
 // =========================================================
 export const IconRadial = (props: any) => <Ionicons name="aperture-outline" {...props} />; 
 export const IconBusinessConfig = (props: any) => <Ionicons name="briefcase-outline" {...props} />;
@@ -43,6 +46,8 @@ export const IconChevronDown = (props: any) => <Ionicons name="chevron-down" {..
 export const IconChevronRight = (props: any) => <Ionicons name="chevron-forward" {...props} />;
 export const IconLogout = (props: any) => <Ionicons name="log-out-outline" {...props} />;
 export const IconSandbox = (props: any) => <Ionicons name="construct-outline" {...props} />;
+export const IconButtonLayout = (props: any) => <Ionicons name="browsers-outline" {...props} />; 
+export const IconContrast = (props: any) => <Ionicons name="contrast-outline" {...props} />;
 
 // --- ÍCONOS PARA LA BIBLIOTECA DE BOTONES ---
 export const IconMusic = (props: any) => <Ionicons name="musical-notes" {...props} />;
@@ -59,9 +64,3 @@ export const IconShield = (props: any) => <Ionicons name="shield-checkmark" {...
 export const IconAirplane = (props: any) => <Ionicons name="airplane" {...props} />;
 export const IconData = (props: any) => <MaterialIcons name="cell-wifi" {...props} />;
 export const IconLogin = (props: any) => <Ionicons name="log-in-outline" {...props} />;
-
-// 🌟 NUEVOS ÍCONOS PARA DESPLEGABLES Y AMBIENTACIÓN
-// Ícono para representar "Botones"
-export const IconButtonLayout = (props: any) => <Ionicons name="browsers-outline" {...props} />; 
-// Ícono para representar "Cambio de Fondo/Contraste"
-export const IconContrast = (props: any) => <Ionicons name="contrast-outline" {...props} />;

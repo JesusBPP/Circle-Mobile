@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Animated, Easing } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Easing, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { styles } from './styles';
 
-// 🌟 Importamos los nuevos íconos
 import { 
   IconRise, IconBulb, IconContacts, IconContainer, IconControl, 
   IconPieChart, IconProduct, IconShop, IconSmile, IconStar, 
@@ -14,6 +13,13 @@ interface RadialMenuProps {
   mainColor?: string;
   secondaryColor?: string;
   title?: string;
+}
+
+// 🌟 INTERFAZ PARA LOS BOTONES DINÁMICOS
+export interface RadialMenuItem {
+  icon: any; 
+  onPress: () => void;
+  color?: string;
 }
 
 // ==========================================
@@ -50,12 +56,14 @@ export const RadialMenu = ({
 // ===============================================================
 // 🔄 COMPONENTE 2: RadialMenuHome (Interactivo y Animado)
 // ===============================================================
-export const RadialMenuHome = () => {
-  // Estados para la interacción del menú
+interface RadialMenuHomeProps {
+  items?: RadialMenuItem[]; // 🌟 Propiedad para inyectar botones dinámicamente
+}
+
+export const RadialMenuHome = ({ items }: RadialMenuHomeProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const menuAnim = useRef(new Animated.Value(0)).current;
 
-  // Estados para la animación de los aros y los íconos
   const spinValue = useRef(new Animated.Value(0)).current;
   const loopRef = useRef<Animated.CompositeAnimation | null>(null);
   
@@ -67,22 +75,11 @@ export const RadialMenuHome = () => {
 
   const [shapeIndex, setShapeIndex] = useState(() => Math.floor(Math.random() * iconSequence.length));
 
-  // 1. Controlamos la rotación y el temporizador de íconos según si está abierto o cerrado
   useEffect(() => {
     if (!isOpen) {
-      // 🛠️ FIX: Reiniciamos el valor a 0 antes de comenzar.
-      // Así garantizamos que siempre recorra toda la distancia en los 3000ms originales
-      // solucionando el problema de que se volviera cada vez más lento.
       spinValue.setValue(0);
-
-      // 🟢 Si está cerrado: Inicia rotación y temporizador
       loopRef.current = Animated.loop(
-        Animated.timing(spinValue, {
-          toValue: 1,
-          duration: 3000, 
-          easing: Easing.linear, 
-          useNativeDriver: true, 
-        })
+        Animated.timing(spinValue, { toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: true })
       );
       loopRef.current.start();
 
@@ -95,61 +92,84 @@ export const RadialMenuHome = () => {
         loopRef.current?.stop();
       };
     } else {
-      // 🛑 Si está abierto: Detenemos la animación de giro
       loopRef.current?.stop();
     }
   }, [isOpen, spinValue]);
 
-  // 2. Acción al presionar el botón central
   const handleToggle = () => {
     const nextState = !isOpen;
     setIsOpen(nextState);
-    // Animación de despliegue de las opciones negras
     Animated.spring(menuAnim, {
-      toValue: nextState ? 1 : 0,
-      friction: 5,
-      useNativeDriver: true,
+      toValue: nextState ? 1 : 0, friction: 5, useNativeDriver: true,
     }).start();
   };
 
-  // --- CÁLCULOS DE ROTACIÓN (Respetando tus ajustes) ---
   const spinClockwiseSlow = spinValue.interpolate({ inputRange: [0, 0.8], outputRange: ['0deg', '290deg'] });
   const spinCounterClockwiseFast = spinValue.interpolate({ inputRange: [0, 1], outputRange: ['360deg', '-360deg'] });
   const spinClockwiseFast = spinValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '720deg'] });
 
-  // --- CÁLCULOS DE DESPLIEGUE (Sub-opciones negras formando un arco superior) ---
-  const opt1 = { transform: [{ scale: menuAnim }, { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] }) }, { translateX: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -95] }) }] };
-  const opt2 = { transform: [{ scale: menuAnim }, { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -75] }) }, { translateX: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -60] }) }] };
-  const opt3 = { transform: [{ scale: menuAnim }, { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -95] }) }] };
-  const opt4 = { transform: [{ scale: menuAnim }, { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -75] }) }, { translateX: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 60] }) }] };
-  const opt5 = { transform: [{ scale: menuAnim }, { translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, -20] }) }, { translateX: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 95] }) }] };
-
-  // --- RENDERIZADO DEL ÍCONO CENTRAL ---
   const renderCenterShape = () => {
-    const iconColor = "rgb(184, 134, 11)"; // Tu color configurado
+    const iconColor = "rgb(184, 134, 11)"; 
     const CurrentIcon = iconSequence[shapeIndex];
     return <CurrentIcon size={26} color={iconColor} />;
   };
 
-  // --- RENDERIZADO DE LAS OPCIONES SECUNDARIAS ---
-  const renderSecondaryOption = (style: any, iconName: any) => (
-    <Animated.View style={[styles.secondaryMenuNode, style]}>
-      <Ionicons name={iconName} size={20} color="#FFFFFF" />
-    </Animated.View>
-  );
+  // 🌟 BOTONES POR DEFECTO (Para no romper el Sandbox si no se pasan props)
+  const defaultItems: RadialMenuItem[] = [
+    { icon: 'settings-outline', onPress: () => console.log('1') },
+    { icon: 'person-outline', onPress: () => console.log('2') },
+    { icon: 'chatbubble-outline', onPress: () => console.log('3') },
+    { icon: 'location-outline', onPress: () => console.log('4') },
+    { icon: 'close-outline', onPress: () => console.log('5') },
+  ];
+  
+  const activeItems = items || defaultItems;
+
+  // 🌟 MATEMÁTICA DISTRIBUTIVA (Trigonometría para un arco perfecto)
+  const renderDynamicOptions = () => {
+    return activeItems.map((item, index) => {
+      const R = 95; // Radio del arco
+      let angle;
+
+      if (activeItems.length === 1) {
+        angle = Math.PI / 2; // Si hay 1 solo botón, va exactamente al medio (90 grados)
+      } else {
+        const startAngle = Math.PI * (5 / 6); // 150 grados (Izquierda)
+        const endAngle = Math.PI * (1 / 6);   // 30 grados (Derecha)
+        // Interpolación lineal del ángulo según el número total de botones
+        angle = startAngle - (index * ((startAngle - endAngle) / (activeItems.length - 1)));
+      }
+
+      // Calculamos X e Y (Y es negativo porque en React Native hacia arriba es negativo)
+      const x = R * Math.cos(angle);
+      const y = -R * Math.sin(angle);
+
+      const translateX = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, x] });
+      const translateY = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [0, y] });
+
+      return (
+        <Animated.View key={index} style={[styles.secondaryMenuNode, { transform: [{ scale: menuAnim }, { translateX }, { translateY }] }]}>
+          <TouchableOpacity 
+            style={{ width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' }}
+            onPress={() => {
+              handleToggle(); // Cerramos el menú
+              item.onPress(); // Ejecutamos la acción (ej. navegar)
+            }}
+          >
+            <Ionicons name={item.icon} size={20} color={item.color || "#FFFFFF"} />
+          </TouchableOpacity>
+        </Animated.View>
+      );
+    });
+  };
 
   return (
     <View style={styles.rotatingContainer}>
       
-      {/* 🌑 SUB-OPCIONES (Aparecen al hacer clic) */}
-      {renderSecondaryOption(opt1, "settings-outline")}
-      {renderSecondaryOption(opt2, "person-outline")}
-      {renderSecondaryOption(opt3, "chatbubble-outline")}
-      {renderSecondaryOption(opt4, "location-outline")}
-      {renderSecondaryOption(opt5, "close-outline")}
+      {/* 🌑 SUB-OPCIONES (Generadas dinámicamente) */}
+      {renderDynamicOptions()}
 
       {/* ⭕ CÍRCULO EXTERIOR AZUL */}
-      {/* Si isOpen es true, rellenamos las partes transparentes con su color para completarlo */}
       <Animated.View style={[
         styles.circleOutermost, 
         { transform: [{ rotate: spinClockwiseSlow }] },

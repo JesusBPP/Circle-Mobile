@@ -1,54 +1,33 @@
 import React, { useState } from 'react';
 import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  KeyboardAvoidingView, 
-  Platform, 
-  TouchableWithoutFeedback, 
-  Keyboard,
-  Dimensions,
-  Alert
+  View, Text, StyleSheet, TextInput, TouchableOpacity, 
+  ActivityIndicator, KeyboardAvoidingView, Platform, 
+  TouchableWithoutFeedback, Keyboard, Dimensions, Alert
 } from 'react-native';
 import { router } from 'expo-router'; 
 
 import { LoginAnimation } from '../../animations/loginAnimation';
 import { loginUser } from '../../features/auth/authService'; 
-// 🌟 Importamos el ícono de Login desde nuestra biblioteca centralizada
 import { IconLogin } from '../../ui/Icons'; 
+import { useAuthStore } from '../../store/useAuthStore';
 
 const { height } = Dimensions.get('window');
 
-// --- COMPONENTE DE INPUT ---
 const GenericInput = ({ placeholder, value, onChangeText, secureTextEntry = false }: any) => (
   <View style={styles.inputContainer}>
     <TextInput
-      style={styles.input}
-      placeholder={placeholder}
-      placeholderTextColor="#94a3b8"
-      value={value}
-      onChangeText={onChangeText}
-      secureTextEntry={secureTextEntry}
-      autoCapitalize="none"
+      style={styles.input} placeholder={placeholder} placeholderTextColor="#94a3b8"
+      value={value} onChangeText={onChangeText} secureTextEntry={secureTextEntry} autoCapitalize="none"
     />
   </View>
 );
 
-// ==========================================
-// 🌟 NUEVO BOTÓN DE LOGIN (Estilo Neomórfico)
-// ==========================================
 const LoginNeoButton = ({ title, onPress, isLoading = false }: any) => (
   <TouchableOpacity 
     style={[styles.neoButton, isLoading && styles.buttonDisabled]} 
-    onPress={onPress} 
-    disabled={isLoading}
-    activeOpacity={0.7}
+    onPress={onPress} disabled={isLoading} activeOpacity={0.7}
   >
     {isLoading ? (
-      // Cambiamos el color del indicador a azul para que resalte en el fondo blanco
       <ActivityIndicator color="rgb(0, 71, 171)" /> 
     ) : (
       <>
@@ -59,29 +38,34 @@ const LoginNeoButton = ({ title, onPress, isLoading = false }: any) => (
   </TouchableOpacity>
 );
 
-// ==========================================
-// --- PANTALLA DE LOGIN ---
-// ==========================================
-
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // 🌟 Extraemos setDashboardData también
+  const { setToken, setDashboardData } = useAuthStore();
+
   const handleLoginAttempt = async () => {
     Keyboard.dismiss();
     if (!email || !password) { 
-        Alert.alert("Campos vacíos", "Por favor llena todos los campos"); 
-        return; 
+        Alert.alert("Campos vacíos", "Por favor llena todos los campos"); return; 
     }
     
     setIsLoading(true);
     
     try {
       const userData = await loginUser(email, password);
-      console.log("Datos recibidos del backend:", userData);
       
-      router.replace('/vistaUnUI'); 
+      if (userData.access_token) {
+        setToken(userData.access_token);
+        // 🌟 CLAVE PARA EVITAR EL ERROR 422: 
+        // Le pasamos el nombre de inmediato para que `home.tsx` sepa si es Admin o no.
+        setDashboardData(userData.nombre, 'Cargando...', 'Cargando...');
+      }
+      
+      // 🌟 Cambiamos la ruta hacia el Home real
+      router.replace('/(tabs)/home'); 
 
     } catch (error: any) {
       Alert.alert("Error de Acceso", error.message);
@@ -96,9 +80,7 @@ export default function Login() {
         <View style={styles.innerContainer}>
           
           <View style={StyleSheet.absoluteFillObject}>
-            <View style={styles.topSection}>
-              <LoginAnimation />
-            </View>
+            <View style={styles.topSection}><LoginAnimation /></View>
             <View style={styles.bottomBlackFiller} />
           </View>
 
@@ -111,8 +93,6 @@ export default function Login() {
             <View style={styles.formFields}>
               <GenericInput placeholder="Correo electrónico" value={email} onChangeText={setEmail} />
               <GenericInput placeholder="Contraseña" value={password} onChangeText={setPassword} secureTextEntry={true} />
-              
-              {/* 🌟 Usamos nuestro nuevo botón estilizado */}
               <LoginNeoButton title="INICIAR SESIÓN" onPress={handleLoginAttempt} isLoading={isLoading} />
             </View>
           </View>
@@ -143,34 +123,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15, justifyContent: 'center', borderWidth: 1, borderColor: '#e2e8f0',
   },
   input: { fontSize: 16, color: '#1e293b' },
-  
-  // 🌟 ESTILOS DEL NUEVO BOTÓN
   neoButton: {
-    width: '100%', 
-    backgroundColor: '#FFFFFF',
-    flexDirection: 'row', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 10,
-    // Efecto underGlow (luz desde abajo)
-    shadowColor: 'rgb(0, 71, 171)', // Cobalt Blue
-    shadowOffset: { width: 0, height: 0 }, // Offset en 0 centra la luz
-    shadowOpacity: 0.8,
-    shadowRadius: 15,
-    elevation: 15, // Sombra para Android
+    width: '100%', backgroundColor: '#FFFFFF', flexDirection: 'row', justifyContent: 'center', 
+    alignItems: 'center', paddingVertical: 14, borderRadius: 12, marginTop: 10,
+    shadowColor: 'rgb(0, 71, 171)', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8,
+    shadowRadius: 15, elevation: 15,
   },
-  buttonDisabled: { 
-    opacity: 0.6 
-  },
+  buttonDisabled: { opacity: 0.6 },
   neoButtonText: { 
-    color: 'rgb(0, 71, 171)', 
-    fontSize: 16, 
-    fontWeight: 'bold',
-    letterSpacing: 1,
-    marginLeft: 10, // Espacio entre el ícono y el texto
-    textShadowColor: 'rgba(0, 71, 171, 0.4)', // Sutil brillo en el texto
-    textShadowRadius: 6,
+    color: 'rgb(0, 71, 171)', fontSize: 16, fontWeight: 'bold', letterSpacing: 1,
+    marginLeft: 10, textShadowColor: 'rgba(0, 71, 171, 0.4)', textShadowRadius: 6,
   },
 });

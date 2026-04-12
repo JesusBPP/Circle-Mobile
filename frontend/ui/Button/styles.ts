@@ -11,11 +11,12 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 10,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 5,
-    marginVertical: 10,
+    // 🌟 Reducimos estos valores para apretar la sombra
+    elevation: 6, // Reducido de 10
+    shadowOffset: { width: 0, height: 2 }, // Centrado y sutil
+    shadowOpacity: 0.4,
+    shadowRadius: 5, // Sombra más contenida
+    marginVertical: 5, // Reducimos el margen exterior
   },
   neoText: {
     fontWeight: 'bold',

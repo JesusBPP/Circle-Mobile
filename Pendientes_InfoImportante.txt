@@ -19,7 +19,8 @@ PROYECTO: CIRCLE - REGISTRO DE PENDIENTES
 [ ] 17. Creación de inputs
 [X] 18. Creación de DropdownButton
 [X] 19. Creación de fondos de pantalla
-
+[ ] 20. Creación de barras inferiores para navegación
+[ ] 21. Creación de componentes para Home de negocio, admin y consumidor
 _____________________________________________________________________
             ANOTACIONES IMPORTANTES
 
