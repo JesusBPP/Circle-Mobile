@@ -166,7 +166,8 @@ Table Citas {
 // Pivote: Una cita puede abarcar múltiples servicios (Corte + Tinte)
 Table Citas_Servicios {
   id_cita int [ref: > Citas.id]
-  id_servicio int [ref: > Servicios_Productos.id]
+  id_servicio_disponible int [ref: > Servicios_Disponibles.id]
+  costo_actual decimal [not null, note: "Snapshot del precio al momento de agendar"]
 }
 
 // Historial de archivos multimedia por cita
@@ -220,6 +221,7 @@ Table Ofertas {
   fecha_inicio timestamp
   fecha_fin timestamp
   limite_existencias int [note: "Null = Ilimitadas"]
+  limite_por_usuario int [note: "Null = ilimitado, 1 = uso único por consumidor"]
   es_publica boolean [not null, default: true, note: "Si es True, ignora la Whitelist"]
 }
 
@@ -228,11 +230,11 @@ Table Ofertas_Reglas {
   id int [pk, increment]
   id_oferta int [not null, ref: > Ofertas.id]
   tipo_regla varchar [not null, note: "'requisito' o 'recompensa'"]
-  id_servicio_producto int [ref: > Servicios_Productos.id]
+  id_servicio_disponible int [ref: > Servicios_Disponibles.id] -- cambia
   cantidad int
-  porcentaje_descuento decimal [note: "Ej: 15% de descuento"]
-  monto_descuento decimal [note: "Ej: $50 pesos de descuento directo"]
-  monto_minimo decimal [note: "Para el caso: Gasta $200 y obtén X"]
+  porcentaje_descuento decimal
+  monto_descuento decimal
+  monto_minimo decimal
 }
 
 // Exclusividad de la oferta
@@ -246,5 +248,6 @@ Table Historial_Uso_Ofertas {
   id int [pk, increment]
   id_oferta int [not null, ref: > Ofertas.id]
   id_usuario_consumidor int [not null, ref: > Usuarios.id]
+  id_transaccion int [not null, ref: > Transacciones.id] -- agrega
   fecha_uso timestamp [not null]
 }

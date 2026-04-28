@@ -21,6 +21,7 @@ PROYECTO: CIRCLE - REGISTRO DE PENDIENTES
 [X] 19. Creación de fondos de pantalla
 [ ] 20. Creación de barras inferiores para navegación
 [ ] 21. Creación de componentes para Home de negocio, admin y consumidor
+[ ] 22. Reviusar la opción de ignore scripts para seguridad.
 _____________________________________________________________________
             ANOTACIONES IMPORTANTES
 
@@ -92,4 +93,4 @@ _____________________________________________________________________
 
 
 admin1@circle.com
-
+carlos@negocio.com

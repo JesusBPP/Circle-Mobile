@@ -22,9 +22,8 @@ export default function RootLayout() {
 
         {/* 🌟 Pantalla global del Catálogo de Soluciones */}
         <Stack.Screen 
-          name="menuSoluciones" 
-          options={{ headerShown: true, title: 'Catálogo de Soluciones', headerBackTitle: 'Atrás' }} 
-        />
+          name="(screens)/menuSoluciones" 
+          options={{ headerShown: true, title: 'Catálogo de Soluciones', headerBackTitle: 'Atrás' }} />
 
         {/* Grupos de Enrutamiento Automático */}
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />

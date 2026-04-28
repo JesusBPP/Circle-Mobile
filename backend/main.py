@@ -1,27 +1,35 @@
 from fastapi import FastAPI
 from datetime import date, datetime, timedelta
-from sqlalchemy import text  # <-- Importamos 'text' para ejecutar comandos SQL puros
+from sqlalchemy import text 
 from backend.core.database import engine, Base, SessionLocal
 
-# IMPORTAMOS TODOS LOS MODELOS
+# 🌟 IMPORTAMOS EL MIDDLEWARE DE CORS
+from fastapi.middleware.cors import CORSMiddleware
+
 from backend.usuarios import models as usuarios_models
 from backend.negocios import models as negocios_models
 from backend.agenda import models as agenda_models
 from backend.catalogo import models as catalogo_models
 from backend.lealtad import models as lealtad_models
 
-# Importamos las rutas
 from backend.usuarios import router as usuarios_router
 from backend.auth import router as auth_router
 
-# Inicializamos la aplicación FastAPI
 app = FastAPI(title="Circle API", description="Backend para el ecosistema Circle")
 
-# LE DECIMOS A FASTAPI QUE USE LAS RUTAS DE USUARIOS
+# ==========================================
+# 🌟 ESCUDO CORS (Cross-Origin Resource Sharing)
+# ==========================================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"], 
+)
+
 app.include_router(usuarios_router.router)
 app.include_router(auth_router.router)
-
-# ==========================================
 
 @app.get("/")
 def ruta_raiz():
@@ -32,21 +40,15 @@ def ruta_raiz():
 # ==========================================
 
 def crear_base_datos():
-    """Borra la base de datos actual y la vuelve a crear desde cero."""
     print("🧹 Borrando base de datos anterior (Forzando limpieza en cascada)...")
-    
-    # Usamos una conexión directa para ejecutar SQL puro y borrar las "tablas fantasma"
     with engine.begin() as conn:
         conn.execute(text("DROP SCHEMA public CASCADE;"))
         conn.execute(text("CREATE SCHEMA public;"))
-        
     print("🏗️ Creando tablas nuevas con la arquitectura V2...")
-    # Ahora sí, creamos las tablas desde cero basadas en los modelos actuales
     Base.metadata.create_all(bind=engine)
     print("✅ ¡Base de datos creada exitosamente!")
 
 def llenar_base_datos():
-    """Inyecta datos de prueba para desarrollo."""
     db = SessionLocal()
     try:
         if db.query(usuarios_models.Usuario).first():
@@ -55,12 +57,8 @@ def llenar_base_datos():
 
         print("🌱 Creando Suscripción base...")
         sub_gratis = usuarios_models.Suscripcion(
-            nombre_plan="Gratis", 
-            limite_soluciones=3, 
-            limite_sucursales=1, 
-            limite_empleados=15, 
-            limite_consumidores=100, 
-            limite_productos=50
+            nombre_plan="Gratis", limite_soluciones=3, limite_sucursales=1, 
+            limite_empleados=15, limite_consumidores=100, limite_productos=50
         )
         db.add(sub_gratis)
         db.commit()
@@ -105,8 +103,8 @@ def llenar_base_datos():
         db.commit()
 
         print("🧪 Vinculando Recetas (Materiales a Productos)...")
-        receta_capuchino = catalogo_models.ProcesoServicioProducto(id_servicio_producto=prod_capuchino.id, id_material=mat_cafe.id, cantidad=0.02) # 20 gramos
-        receta_leche = catalogo_models.ProcesoServicioProducto(id_servicio_producto=prod_capuchino.id, id_material=mat_leche.id, cantidad=0.25) # 250 ml
+        receta_capuchino = catalogo_models.ProcesoServicioProducto(id_servicio_producto=prod_capuchino.id, id_material=mat_cafe.id, cantidad=0.02)
+        receta_leche = catalogo_models.ProcesoServicioProducto(id_servicio_producto=prod_capuchino.id, id_material=mat_leche.id, cantidad=0.25)
         db.add_all([receta_capuchino, receta_leche])
         db.commit()
 
@@ -127,7 +125,7 @@ def llenar_base_datos():
         db.add(cita_prueba)
         db.commit()
 
-        print("✅ ¡Base de datos llenada con éxito con la estructura v2.0!")
+        print("✅ ¡Base de datos llenada con éxito!")
 
     except Exception as e:
         print(f"❌ Ocurrió un error al llenar la base de datos: {e}")
