@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from datetime import date, datetime, timedelta
 from sqlalchemy import text 
-from backend.core.database import engine, Base, SessionLocal
+from backend.core.database import engine, Base, db_manager
+from backend.negocios import router as negocios_router
 
-# 🌟 IMPORTAMOS EL MIDDLEWARE DE CORS
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.usuarios import models as usuarios_models
@@ -14,11 +14,13 @@ from backend.lealtad import models as lealtad_models
 
 from backend.usuarios import router as usuarios_router
 from backend.auth import router as auth_router
+from backend.agenda import router as agenda_router
 
 app = FastAPI(title="Circle API", description="Backend para el ecosistema Circle")
+app.include_router(negocios_router.router)
 
 # ==========================================
-# 🌟 ESCUDO CORS (Cross-Origin Resource Sharing)
+# ESCUDO CORS
 # ==========================================
 app.add_middleware(
     CORSMiddleware,
@@ -30,6 +32,7 @@ app.add_middleware(
 
 app.include_router(usuarios_router.router)
 app.include_router(auth_router.router)
+app.include_router(agenda_router.router)
 
 @app.get("/")
 def ruta_raiz():
@@ -49,7 +52,7 @@ def crear_base_datos():
     print("✅ ¡Base de datos creada exitosamente!")
 
 def llenar_base_datos():
-    db = SessionLocal()
+    db = db_manager.obtener_sesion()
     try:
         if db.query(usuarios_models.Usuario).first():
             print("⚠️ La base de datos ya tiene información. Por favor, recréala primero (Opción 1).")
@@ -90,6 +93,33 @@ def llenar_base_datos():
         db.add(es1)
         db.commit()
 
+        print("🛠️ Creando Catálogo de Soluciones (App Store interna)...")
+        solucion_agenda = negocios_models.Solucion(
+            nombre="Agenda",
+            descripcion="Gestión inteligente de citas y reservas en tiempo real.",
+            ruta_frontend="/agenda",
+            es_premium_exclusiva=False,
+            activa_en_catalogo=True
+        )
+        solucion_lealtad = negocios_models.Solucion(
+            nombre="Lealtad",
+            descripcion="Fideliza a tus clientes con puntos, sellos y ofertas dinámicas.",
+            ruta_frontend="/lealtad",
+            es_premium_exclusiva=False,
+            activa_en_catalogo=True
+        )
+        db.add_all([solucion_agenda, solucion_lealtad])
+        db.commit()
+
+        print("📲 Instalando Soluciones en Negocios de prueba...")
+        instalacion_agenda = negocios_models.NegocioSolucion(
+            id_negocio=negocio1.id,
+            id_solucion=solucion_agenda.id,
+            esta_activa=True
+        )
+        db.add(instalacion_agenda)
+        db.commit()
+
         print("📦 Creando Materiales (Inventario Base)...")
         mat_cafe = catalogo_models.Material(nombre="Kilo de Café Colombia", costo=250.00, cantidad_existencia=10.0)
         mat_leche = catalogo_models.Material(nombre="Litro de Leche Entera", costo=25.00, cantidad_existencia=50.0)
@@ -100,6 +130,28 @@ def llenar_base_datos():
         prod_capuchino = catalogo_models.ServicioProducto(nombre="Capuchino Grande", costo=65.00, tipo_producto="producto")
         serv_corte = catalogo_models.ServicioProducto(nombre="Corte de Cabello Clásico", costo=250.00, tipo_producto="servicio")
         db.add_all([prod_capuchino, serv_corte])
+        db.commit()
+
+        print("🪙 Configurando Programa de Lealtad para Cafetería El Grano...")
+        config_lealtad = lealtad_models.ConfiguracionLealtad(
+            id_negocio=negocio1.id,
+            tasa_puntos_por_peso=1.0, 
+            puntos_por_visita=5,      
+            id_producto_estrella=prod_capuchino.id,
+            multiplicador_producto=2.0, 
+            meses_vigencia_puntos=12
+        )
+        db.add(config_lealtad)
+        db.commit()
+
+        print("💳 Creando Cartera de Lealtad para Juan Consumidor...")
+        cartera_juan = lealtad_models.CarteraLealtad(
+            id_usuario_consumidor=cons1.id,
+            id_negocio=negocio1.id,
+            saldo_puntos=150.50,
+            saldo_sellos=3
+        )
+        db.add(cartera_juan)
         db.commit()
 
         print("🧪 Vinculando Recetas (Materiales a Productos)...")
@@ -115,17 +167,78 @@ def llenar_base_datos():
         db.commit()
 
         print("🎁 Creando Ofertas de Lealtad en Sucursales...")
-        oferta_bienvenida = lealtad_models.Oferta(id_sucursales=sucursal_cafe.id, titulo="2x1 en tu primer Capuchino", es_publica=True)
+        oferta_bienvenida = lealtad_models.Oferta(
+            id_sucursales=sucursal_cafe.id, 
+            titulo="2x1 en tu primer Capuchino", 
+            es_publica=True,
+            costo_en_puntos=500.0 
+        )
         db.add(oferta_bienvenida)
         db.commit()
 
-        print("📅 Creando Citas de Prueba...")
-        fecha_cita = datetime.utcnow() + timedelta(days=1)
-        cita_prueba = agenda_models.Cita(id_sucursal=sucursal_barber.id, titulo="Corte de Juan", fecha_hora_inicio=fecha_cita, fecha_hora_fin=fecha_cita + timedelta(hours=1), numero_bloques=2)
-        db.add(cita_prueba)
-        db.commit()
+        # ========================================================
+        # 🌟 NUEVO: CREANDO CITAS Y EVENTOS PARA AMBOS NEGOCIOS
+        # ========================================================
+        print("📅 Creando Citas y Eventos de Prueba...")
+        hoy = datetime.utcnow()
 
-        print("✅ ¡Base de datos llenada con éxito!")
+        # 1. Cita original para la Barbería de Ana
+        cita_barberia = agenda_models.Cita(
+            id_sucursal=sucursal_barber.id, 
+            titulo="Corte de Juan", 
+            descripcion="Corte clásico",
+            fecha_hora_inicio=hoy + timedelta(days=1), 
+            fecha_hora_fin=hoy + timedelta(days=1, hours=1), 
+            numero_bloques=2,
+            estado="Programada"
+        )
+
+        # 2. 🌟 Citas para la Cafetería de Carlos Dueño (Diferentes Estados)
+        cita_carlos_1 = agenda_models.Cita(
+            id_sucursal=sucursal_cafe.id,
+            titulo="Cata de Café VIP",
+            descripcion="Degustación privada de granos colombianos",
+            fecha_hora_inicio=hoy - timedelta(days=1), # Fue ayer
+            fecha_hora_fin=hoy - timedelta(days=1) + timedelta(hours=2),
+            numero_bloques=4,
+            estado="Finalizada" # Aparecerá en Dorado Metálico en el Frontend
+        )
+
+        cita_carlos_2 = agenda_models.Cita(
+            id_sucursal=sucursal_cafe.id,
+            titulo="Reserva Mesa 4",
+            descripcion="Cumpleaños de Juan Consumidor",
+            fecha_hora_inicio=hoy + timedelta(days=2), # En dos días
+            fecha_hora_fin=hoy + timedelta(days=2) + timedelta(hours=1),
+            numero_bloques=2,
+            estado="Programada" # Aparecerá en Zafiro/Esmeralda
+        )
+
+        cita_carlos_3 = agenda_models.Cita(
+            id_sucursal=sucursal_cafe.id,
+            titulo="Entrevista Barista",
+            descripcion="Candidato: Luis Pérez",
+            fecha_hora_inicio=hoy + timedelta(hours=3), # En unas horas
+            fecha_hora_fin=hoy + timedelta(hours=4),
+            numero_bloques=2,
+            estado="Pendiente"
+        )
+
+        cita_carlos_4 = agenda_models.Cita(
+            id_sucursal=sucursal_cafe.id,
+            titulo="Evento Corporativo",
+            descripcion="Reunión equipo de ventas",
+            fecha_hora_inicio=hoy + timedelta(days=5),
+            fecha_hora_fin=hoy + timedelta(days=5) + timedelta(hours=3),
+            numero_bloques=6,
+            estado="Cancelada"
+        )
+
+        db.add_all([cita_barberia, cita_carlos_1, cita_carlos_2, cita_carlos_3, cita_carlos_4])
+        db.commit()
+        # ========================================================
+
+        print("✅ ¡Base de datos llenada con éxito incluyendo Soluciones, Lealtad y Agenda Completa!")
 
     except Exception as e:
         print(f"❌ Ocurrió un error al llenar la base de datos: {e}")

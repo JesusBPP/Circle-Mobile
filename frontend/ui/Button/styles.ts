@@ -11,12 +11,11 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 25,
     justifyContent: 'center',
     alignItems: 'center',
-    // 🌟 Reducimos estos valores para apretar la sombra
-    elevation: 6, // Reducido de 10
-    shadowOffset: { width: 0, height: 2 }, // Centrado y sutil
+    elevation: 6,
+    shadowOffset: { width: 0, height: 2 }, 
     shadowOpacity: 0.4,
-    shadowRadius: 5, // Sombra más contenida
-    marginVertical: 5, // Reducimos el margen exterior
+    shadowRadius: 5, 
+    marginVertical: 5, 
   },
   neoText: {
     fontWeight: 'bold',
@@ -141,5 +140,90 @@ export const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     fontSize: 13,
     marginRight: 5,
+  },
+
+  // ==========================================
+  // 🌟 ESTILO 5: CARD SOLUCIÓN (Glassmorphism + Gradiente)
+  // ==========================================
+  cardSolWrapper: {
+    width: '100%',
+    height: 160, 
+    borderRadius: 24,
+    elevation: 8,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    overflow: 'hidden', 
+    marginBottom: 20,
+  },
+  cardSolGradient: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+  },
+  cardSolWatermark: {
+    position: 'absolute',
+    right: -25,
+    bottom: -30,
+    transform: [{ rotate: '-15deg' }], 
+  },
+  cardSolContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 2, 
+  },
+  cardSolIconContainer: {
+    width: 65,
+    height: 65,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)', 
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+  },
+  cardSolTextContainer: {
+    flex: 1,
+  },
+  cardSolTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  cardSolDescription: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.9)',
+    lineHeight: 20,
+  },
+  
+  // 🌟 NUEVO: VARIANTES COMPACTAS PARA EL DROPDOWN
+  cardSolWrapperCompact: {
+    height: 100, // Menos altura para no saturar el Dropdown
+    marginBottom: 12,
+    borderRadius: 18,
+  },
+  cardSolIconContainerCompact: {
+    width: 45,
+    height: 45,
+    borderRadius: 12,
+    marginRight: 15,
+  },
+  cardSolTitleCompact: {
+    fontSize: 20,
+    marginBottom: 2,
+  },
+  cardSolDescriptionCompact: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  cardSolWatermarkCompact: {
+    position: 'absolute',
+    right: -15,
+    bottom: -40,
+    transform: [{ scale: 0.7 }, { rotate: '-15deg' }], 
   }
 });
+

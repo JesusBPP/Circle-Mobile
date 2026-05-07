@@ -6,15 +6,44 @@ import { FondoManager } from '../../ui/Fondo';
 import { RadialMenuHome } from '../../ui/RadialMenu';
 import { useAuthStore } from '../../store/useAuthStore';
 import { homeService } from '../../features/home/homeService';
+// 🌟 Importamos el servicio
+import { solucionesService } from '../../features/soluciones/solucionesService';
 
 export default function HomeNegocio() {
-  const { userName, negocioName, sucursalName, setDashboardData } = useAuthStore();
+  const { userName, negocioName, sucursalName, setDashboardData, herramientasActivas, setHerramientas } = useAuthStore();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         const data = await homeService.getDashboardInfo();
-        setDashboardData(data.nombre_usuario, data.nombre_negocio, data.nombre_sucursal);
+        
+        setDashboardData(
+          data.nombre_usuario, 
+          data.nombre_negocio, 
+          data.nombre_sucursal,
+          data.id_negocio 
+        );
+        
+        if (data.id_negocio) {
+          const solucionesDb = await solucionesService.obtenerSoluciones(data.id_negocio);
+          
+          const herramientasFormateadas = solucionesDb.map((item: any) => {
+            let iconoAsignado = 'apps-outline';
+            if (item.solucion.nombre.toLowerCase() === 'agenda') iconoAsignado = 'calendar';
+            if (item.solucion.nombre.toLowerCase() === 'lealtad') iconoAsignado = 'star';
+
+            return {
+              id: item.solucion.id, // 🌟 CORRECCIÓN CRUCIAL: Rescatamos el ID de la base de datos
+              nombre: item.solucion.nombre,
+              ruta: item.solucion.ruta_frontend || `/(screens)/${item.solucion.nombre.toLowerCase()}`,
+              icono: iconoAsignado
+            };
+          });
+
+          // Guardamos las herramientas con ID incluido en el estado global
+          setHerramientas(herramientasFormateadas);
+        }
+
       } catch (error) {
         console.log("Error al cargar los datos del dashboard:", error);
       }
@@ -26,15 +55,20 @@ export default function HomeNegocio() {
   const subtitleColor = '#64748b';
   const headerGlassColor = 'rgba(255, 255, 255, 0.7)';
 
+  const dynamicItems = herramientasActivas.map((herramienta) => ({
+    icon: herramienta.icono,
+    onPress: () => router.push(herramienta.ruta as any)
+  }));
+
   const menuItems = [
+    ...dynamicItems, 
     { 
       icon: 'add-outline', 
-      onPress: () => router.push('/menuSoluciones') 
+      onPress: () => router.push('/(screens)/menuSoluciones') 
     },
     { 
       icon: 'settings-outline', 
-      // 🌟 CAMBIO: Navegamos a la pestaña general de Configuración
-      onPress: () => router.push('/config') 
+      onPress: () => router.push('/(tabs)/config') 
     }
   ];
 

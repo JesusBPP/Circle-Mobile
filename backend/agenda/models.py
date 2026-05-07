@@ -11,9 +11,7 @@ class AgendaWhitelist(Base):
     __tablename__ = "agenda_whitelist"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    # Vinculado a sucursal en lugar de negocio
     id_sucursales = Column(Integer, ForeignKey("sucursales.id"), nullable=False)
-    # Null si el usuario aún no se registra en Circle
     id_usuario_consumidor = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
 
 
@@ -29,7 +27,6 @@ class Cita(Base):
     fecha_hora_fin = Column(DateTime, nullable=False)
     numero_bloques = Column(Integer, nullable=False)
     
-    # El costo se calcula dinámicamente sumando los servicios asociados
     notas_internas = Column(String)
     estado = Column(String, default="programada", nullable=False)
 
@@ -41,7 +38,6 @@ class Cita(Base):
 class CitaServicio(Base):
     __tablename__ = "citas_servicios"
     id_cita = Column(Integer, ForeignKey("citas.id"), primary_key=True, nullable=False)
-    # Vinculado a la tabla unificada de servicios_productos
     id_servicio_producto = Column(Integer, ForeignKey("servicios_productos.id"), primary_key=True, nullable=False)
 
 
@@ -78,7 +74,6 @@ class CRMClienteNegocio(Base):
     __tablename__ = "crm_clientes_negocio"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    # Vinculado a sucursal
     id_sucursales = Column(Integer, ForeignKey("sucursales.id"), nullable=False)
     id_usuario_consumidor = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     
@@ -95,11 +90,14 @@ class Transaccion(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     id_usuario_consumidor = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
-    # Opcional: Agregamos id_sucursal para tener el rastro de dónde se hizo la venta
     id_sucursal = Column(Integer, ForeignKey("sucursales.id"), nullable=False)
     
     monto_total = Column(Numeric(10, 2), nullable=False)
     fecha_transaccion = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # 🌟 NUEVO: Relación con los movimientos de lealtad
+    # Permite ver qué puntos o sellos se generaron en esta compra
+    movimientos_lealtad = relationship("HistorialMovimientoLealtad", back_populates="transaccion")
 
 
 class DetalleTransaccion(Base):
@@ -107,8 +105,6 @@ class DetalleTransaccion(Base):
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     id_transaccion = Column(Integer, ForeignKey("transacciones.id"), nullable=False)
-    
-    # Vinculamos directo a la disponibilidad en sucursal como marca tu DBML
     id_servicios_productos = Column(Integer, ForeignKey("servicios_disponibles.id"))
     
     cantidad = Column(Integer, nullable=False)

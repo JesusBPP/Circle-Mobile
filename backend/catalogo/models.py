@@ -27,6 +27,10 @@ class ServicioProducto(Base):
     costo = Column(Numeric(10, 2), nullable=False)
     tipo_producto = Column(String, nullable=False) # 'servicio' o 'producto'
 
+    # 🌟 NUEVO: Relación con configuraciones de lealtad
+    # Permite saber en qué negocios este producto da puntos dobles
+    configuraciones_lealtad = relationship("ConfiguracionLealtad", back_populates="producto_estrella")
+
 
 class ProcesoServicioProducto(Base):
     __tablename__ = "proceso_servicio_producto"

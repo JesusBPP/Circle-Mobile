@@ -223,6 +223,8 @@ Table Ofertas {
   limite_existencias int [note: "Null = Ilimitadas"]
   limite_por_usuario int [note: "Null = ilimitado, 1 = uso único por consumidor"]
   es_publica boolean [not null, default: true, note: "Si es True, ignora la Whitelist"]
+  costo_en_puntos decimal [default: null, note: "Si tiene valor, la oferta funciona como una recompensa que se 'compra' descontando saldo de la cartera"]
+
 }
 
 // Los "Bloques de Lego" para armar la oferta
@@ -230,7 +232,7 @@ Table Ofertas_Reglas {
   id int [pk, increment]
   id_oferta int [not null, ref: > Ofertas.id]
   tipo_regla varchar [not null, note: "'requisito' o 'recompensa'"]
-  id_servicio_disponible int [ref: > Servicios_Disponibles.id] -- cambia
+  id_servicio_disponible int [ref: > Servicios_Disponibles.id]
   cantidad int
   porcentaje_descuento decimal
   monto_descuento decimal
@@ -248,6 +250,89 @@ Table Historial_Uso_Ofertas {
   id int [pk, increment]
   id_oferta int [not null, ref: > Ofertas.id]
   id_usuario_consumidor int [not null, ref: > Usuarios.id]
-  id_transaccion int [not null, ref: > Transacciones.id] -- agrega
+  id_transaccion int [not null, ref: > Transacciones.id]
   fecha_uso timestamp [not null]
+}
+
+// ==========================================
+// 7. MÓDULO DE LEALTAD (Puntos y Sellos)
+// ==========================================
+
+// Las "Reglas del Juego" definidas por el dueño
+Table Configuracion_Lealtad {
+  id int [pk, increment]
+  id_negocio int [not null, unique, ref: > Negocios.id, note: "Un negocio tiene 1 sola configuración global"]
+  
+  // Regla 1: Ticket ($ gastado)
+  tasa_puntos_por_peso decimal [default: 0, note: "Ej: 1.0 = 1 punto por cada $1"]
+  
+  // Regla 2: Visitas (Sellos)
+  puntos_por_visita int [default: 0, note: "Ej: 1 sello/punto por cada transacción completada"]
+  
+  // Regla 3: Producto Estrella (Puntos dobles)
+  id_producto_estrella int [ref: > Servicios_Productos.id, note: "Producto que detona el multiplicador"]
+  multiplicador_producto decimal [default: 1.0, note: "Ej: 2.0 = Puntos Dobles si el ticket incluye el producto estrella"]
+  
+  // Regla de caducidad
+  meses_vigencia_puntos int [default: 12]
+}
+
+// La "Billetera" del consumidor en cada negocio
+Table Carteras_Lealtad {
+  id int [pk, increment]
+  id_usuario_consumidor int [not null, ref: > Usuarios.id]
+  id_negocio int [not null, ref: > Negocios.id]
+  
+  saldo_puntos decimal [default: 0.0]
+  saldo_sellos int [default: 0]
+  fecha_ultima_acumulacion timestamp
+  
+  Indexes {
+    (id_usuario_consumidor, id_negocio) [unique, name: 'idx_cartera_unica_por_negocio']
+  }
+}
+
+// Auditoría: El estado de cuenta del consumidor
+Table Historial_Movimientos_Lealtad {
+  id int [pk, increment]
+  id_cartera int [not null, ref: > Carteras_Lealtad.id]
+  id_transaccion int [ref: > Transacciones.id, note: "Puede ser Nulo si los puntos se dieron por compensación/regalo"]
+  
+  tipo_movimiento varchar [not null, note: "'acumulacion' o 'canje'"]
+  monto_puntos decimal [default: 0.0]
+  monto_sellos int [default: 0]
+  descripcion varchar [note: "Ej: 'Puntos dobles por compra de Capuchino'"]
+  fecha_movimiento timestamp [not null]
+}
+
+// ==========================================
+// 8. ECOSISTEMA: CATÁLOGO DE SOLUCIONES (App Store interna)
+// ==========================================
+
+// El catálogo maestro de herramientas disponibles en Circle
+Table Soluciones {
+  id int [pk, increment]
+  nombre varchar [not null, note: "Ej: 'Agenda', 'Lealtad', 'Inventario'"]
+  descripcion varchar
+  
+  ruta_frontend varchar [note: "La ruta de navegación, ej: '/agenda'"]
+  
+  // Control de Acceso
+  es_premium_exclusiva boolean [default: false, note: "Si es True, el plan Gratis no puede verla ni instalarla"]
+  activa_en_catalogo boolean [default: true, note: "Para ocultar herramientas que están en mantenimiento o 'Próximamente'"]
+}
+
+// Las herramientas que cada dueño ha "instalado" en su menú
+Table Negocios_Soluciones {
+  id int [pk, increment]
+  id_negocio int [not null, ref: > Negocios.id]
+  id_solucion int [not null, ref: > Soluciones.id]
+  
+  fecha_instalacion timestamp [not null, note: "Cuándo se agregó al menú radial"]
+  esta_activa boolean [default: true, note: "Permite apagar la herramienta sin borrar los datos del cliente"]
+  
+  Indexes {
+    // Evita que un negocio instale la misma solución dos veces
+    (id_negocio, id_solucion) [unique, name: 'idx_negocio_solucion_unica']
+  }
 }

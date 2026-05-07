@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Numeric
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Numeric, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from backend.core.database import Base
@@ -22,6 +22,13 @@ class Negocio(Base):
 
     # RELACIONES MÁGICAS
     sucursales = relationship("Sucursal", back_populates="negocio")
+    
+    # Conexiones con el Programa de Lealtad
+    configuracion_lealtad = relationship("ConfiguracionLealtad", back_populates="negocio", uselist=False)
+    carteras_lealtad = relationship("CarteraLealtad", back_populates="negocio")
+    
+    # 🌟 NUEVO: Conexión con las soluciones instaladas (App Store interna)
+    soluciones_instaladas = relationship("NegocioSolucion", back_populates="negocio")
 
 
 class Sucursal(Base):
@@ -67,3 +74,44 @@ class EmpleadoSucursal(Base):
 
     # Relaciones Mágicas
     sucursal = relationship("Sucursal", back_populates="empleados")
+
+
+# ==========================================
+# 🌟 8. NUEVO MÓDULO: ECOSISTEMA Y SOLUCIONES
+# ==========================================
+
+class Solucion(Base):
+    __tablename__ = "soluciones"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    nombre = Column(String, nullable=False) # Ej: 'Agenda', 'Lealtad'
+    descripcion = Column(String)
+    
+    ruta_frontend = Column(String) # Ej: '/agenda'
+    
+    # Control de Acceso
+    es_premium_exclusiva = Column(Boolean, default=False, nullable=False)
+    activa_en_catalogo = Column(Boolean, default=True, nullable=False)
+
+    # Relación inversa
+    negocios_instalados = relationship("NegocioSolucion", back_populates="solucion")
+
+
+class NegocioSolucion(Base):
+    __tablename__ = "negocios_soluciones"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id_negocio = Column(Integer, ForeignKey("negocios.id"), nullable=False)
+    id_solucion = Column(Integer, ForeignKey("soluciones.id"), nullable=False)
+    
+    fecha_instalacion = Column(DateTime, default=datetime.utcnow, nullable=False)
+    esta_activa = Column(Boolean, default=True, nullable=False)
+
+    # 🌟 Restricción para no instalar la misma solución dos veces en el mismo negocio
+    __table_args__ = (
+        UniqueConstraint('id_negocio', 'id_solucion', name='idx_negocio_solucion_unica'),
+    )
+
+    # Relaciones inversas
+    negocio = relationship("Negocio", back_populates="soluciones_instaladas")
+    solucion = relationship("Solucion", back_populates="negocios_instalados")

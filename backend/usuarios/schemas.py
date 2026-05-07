@@ -58,5 +58,8 @@ class DashboardResponse(BaseModel):
     nombre_usuario: str
     nombre_negocio: str
     nombre_sucursal: str
+    
+    # 🌟 EL DATO CLAVE QUE FALTABA PARA EL RADIAL MENU:
+    id_negocio: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Date, DateTime, Boolean
+from sqlalchemy.orm import relationship # 🌟 NUEVO: Importación para relacionar tablas
 from datetime import datetime
 from backend.core.database import Base
 
@@ -47,3 +48,9 @@ class Usuario(Base):
     
     # 👑 BANDERA DE SUPER ADMINISTRADOR
     es_admin_sistema = Column(Boolean, default=False, nullable=False) # Si es True, tiene acceso global a todo Circle
+
+    # ==========================================
+    # 🌟 NUEVO: RELACIONES MÁGICAS
+    # ==========================================
+    # Permite buscar cuántos puntos tiene este usuario en todos los negocios de Circle
+    carteras_lealtad = relationship("CarteraLealtad", back_populates="usuario")
