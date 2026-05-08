@@ -14,18 +14,10 @@ router = APIRouter(
     tags=["Agenda"]
 )
 
-# ==========================================
-# 🌟 PATRÓN REPOSITORIO: VALIDADOR DE EMPALMES
-# ==========================================
 def validar_empalme_citas(db: Session, id_sucursal: int, inicio: datetime, fin: datetime, exclude_cita_id: int = None):
-    """
-    Verifica si existe alguna cita activa (No cancelada ni finalizada) que se cruce 
-    con el horario solicitado.
-    """
     query = db.query(agenda_models.Cita).filter(
         agenda_models.Cita.id_sucursal == id_sucursal,
         agenda_models.Cita.estado.notin_(["Cancelada", "Finalizada"]),
-        # Lógica de solapamiento de rangos de tiempo
         agenda_models.Cita.fecha_hora_inicio < fin,
         agenda_models.Cita.fecha_hora_fin > inicio
     )
@@ -39,9 +31,7 @@ def validar_empalme_citas(db: Session, id_sucursal: int, inicio: datetime, fin: 
             detail=f"Horario no disponible. Se empalma con la actividad: {empalme.titulo}"
         )
 
-# Función Helper para formatear la respuesta inyectando el 'tipo'
 def formatear_cita_response(db: Session, cita: agenda_models.Cita):
-    # Si existe en Citas_Servicios, es una Cita. Si no, es un Evento.
     es_cita = db.query(agenda_models.CitaServicio).filter(agenda_models.CitaServicio.id_cita == cita.id).first()
     tipo = "cita" if es_cita else "evento"
     
@@ -58,13 +48,8 @@ def formatear_cita_response(db: Session, cita: agenda_models.Cita):
         "tipo": tipo
     }
 
-# ==========================================
-# ENDPOINTS
-# ==========================================
-
 @router.get("/negocios/{id_negocio}/servicios", response_model=List[agenda_schemas.ServicioDropdownResponse])
 def obtener_servicios_dropdown(id_negocio: int, db: Session = Depends(get_db)):
-    """Obtiene los servicios del catálogo para llenar el Dropdown al crear una cita"""
     sucursales = db.query(negocios_models.Sucursal.id).filter(negocios_models.Sucursal.id_negocio == id_negocio).all()
     ids_suc = [s[0] for s in sucursales]
     
@@ -90,16 +75,13 @@ def obtener_citas_negocio(id_negocio: int, db: Session = Depends(get_db)):
 
 @router.post("/negocios/{id_negocio}/citas", response_model=agenda_schemas.CitaResponse, status_code=status.HTTP_201_CREATED)
 def crear_cita(id_negocio: int, cita: agenda_schemas.CitaCreate, db: Session = Depends(get_db)):
-    # 1. Validar empalmes
     validar_empalme_citas(db, cita.id_sucursal, cita.fecha_hora_inicio, cita.fecha_hora_fin)
         
-    # 2. Guardar la cita maestra
     datos_cita = cita.model_dump(exclude={"id_servicio_producto"})
     nueva_cita = agenda_models.Cita(**datos_cita)
     db.add(nueva_cita)
-    db.flush() # Para obtener el ID generado sin hacer commit definitivo
+    db.flush() 
     
-    # 3. Si eligió un servicio en el Dropdown, es una CITA
     if cita.id_servicio_producto:
         cita_serv = agenda_models.CitaServicio(
             id_cita=nueva_cita.id, 
@@ -125,7 +107,16 @@ def actualizar_cita(id_cita: int, cita_update: agenda_schemas.CitaUpdate, db: Se
     if not cita:
         raise HTTPException(status_code=404, detail="Cita no encontrada")
     
-    # 🌟 PATRÓN STATE: MÁQUINA DE ESTADOS EN EL BACKEND
+    # 🌟 1. LÓGICA CORREGIDA: Procesar fechas primero, sin importar el "Estado"
+    fechas_modificadas = False
+    if cita_update.fecha_hora_inicio and cita_update.fecha_hora_fin:
+        if cita_update.fecha_hora_inicio != cita.fecha_hora_inicio or cita_update.fecha_hora_fin != cita.fecha_hora_fin:
+            validar_empalme_citas(db, cita.id_sucursal, cita_update.fecha_hora_inicio, cita_update.fecha_hora_fin, exclude_cita_id=cita.id)
+            cita.fecha_hora_inicio = cita_update.fecha_hora_inicio
+            cita.fecha_hora_fin = cita_update.fecha_hora_fin
+            fechas_modificadas = True
+
+    # 🌟 2. MÁQUINA DE ESTADOS
     transiciones_validas = {
         "Programada": ["Reprogramada", "Finalizada", "Cancelada"],
         "Reprogramada": ["Reprogramada", "Finalizada", "Cancelada"],
@@ -137,19 +128,12 @@ def actualizar_cita(id_cita: int, cita_update: agenda_schemas.CitaUpdate, db: Se
     if cita_update.estado and cita_update.estado != cita.estado:
         if cita_update.estado not in transiciones_validas.get(cita.estado, []):
             raise HTTPException(status_code=400, detail=f"Transición inválida de {cita.estado} a {cita_update.estado}.")
-        
-        # Si se reprograma, validamos el nuevo horario
-        if cita_update.estado == "Reprogramada":
-            if not cita_update.fecha_hora_inicio or not cita_update.fecha_hora_fin:
-                raise HTTPException(status_code=400, detail="Debes enviar la nueva fecha y hora para reprogramar.")
-            validar_empalme_citas(db, cita.id_sucursal, cita_update.fecha_hora_inicio, cita_update.fecha_hora_fin, exclude_cita_id=cita.id)
-            
-            cita.fecha_hora_inicio = cita_update.fecha_hora_inicio
-            cita.fecha_hora_fin = cita_update.fecha_hora_fin
-        
         cita.estado = cita_update.estado
+    elif fechas_modificadas and cita.estado == "Programada":
+        # Autotransición: Si mandó nuevas fechas pero no un nuevo estado explícito, lo cambiamos a Reprogramada
+        cita.estado = "Reprogramada"
 
-    # Actualizamos textos
+    # 3. Actualizamos textos
     if cita_update.descripcion is not None:
         cita.descripcion = cita_update.descripcion
     if cita_update.notas_internas is not None:

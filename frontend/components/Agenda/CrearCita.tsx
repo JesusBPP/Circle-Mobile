@@ -3,10 +3,11 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView,
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { agendaService } from '../../features/agenda/agendaService';
+import { DropdownButton } from '../../ui/DropdownButton';
 
 interface CrearCitaProps {
   visible: boolean;
-  negocioId: number | null; // 🌟 Necesario para buscar los servicios
+  negocioId: number | null; 
   onClose: () => void;
   onSave: (datos: any) => void;
 }
@@ -17,7 +18,6 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
   const [descripcion, setDescripcion] = useState('');
   const [notasInternas, setNotasInternas] = useState('');
 
-  // Estados de Fechas
   const [fecha, setFecha] = useState(new Date());
   const [horaInicio, setHoraInicio] = useState(new Date());
   const [horaFin, setHoraFin] = useState(new Date(new Date().setHours(new Date().getHours() + 1))); 
@@ -26,7 +26,6 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
   const [showInicioPicker, setShowInicioPicker] = useState(false);
   const [showFinPicker, setShowFinPicker] = useState(false);
 
-  // 🌟 ESTADOS PARA EL CATÁLOGO DE SERVICIOS
   const [servicios, setServicios] = useState<any[]>([]);
   const [idServicioSeleccionado, setIdServicioSeleccionado] = useState<number | null>(null);
 
@@ -34,12 +33,18 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
     if (visible && negocioId) {
       agendaService.obtenerServiciosNegocio(negocioId).then(data => {
         setServicios(data);
-        if (data.length > 0) setIdServicioSeleccionado(data[0].id); // Autoseleccionamos el primero
+        if (data.length > 0) setIdServicioSeleccionado(data[0].id); 
       });
     }
   }, [visible, negocioId]);
 
   const colorActivo = tipo === 'cita' ? 'rgb(15, 82, 186)' : 'rgb(34, 139, 34)'; 
+
+  // 🌟 FUNCIÓN MAESTRA DE FECHAS
+  const getLocalISOString = (date: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+  };
 
   const handleGuardar = () => {
     const fechaHoraInicio = new Date(fecha);
@@ -51,12 +56,11 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
     const nuevaCita = {
       titulo,
       descripcion,
-      fecha_hora_inicio: fechaHoraInicio.toISOString(),
-      fecha_hora_fin: fechaHoraFin.toISOString(),
+      fecha_hora_inicio: getLocalISOString(fechaHoraInicio),
+      fecha_hora_fin: getLocalISOString(fechaHoraFin),
       numero_bloques: 2, 
       notas_internas: notasInternas,
       estado: 'Programada',
-      // 🌟 Si es Cita, enviamos el ID del servicio. Si es Evento interno, enviamos null.
       id_servicio_producto: tipo === 'cita' ? idServicioSeleccionado : null
     };
     onSave(nuevaCita);
@@ -74,6 +78,12 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
 
   const formatDateStr = (date: Date) => date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
   const formatTimeStr = (date: Date) => date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+  const getServicioSeleccionadoNombre = () => {
+    if (!idServicioSeleccionado) return 'Selecciona un servicio';
+    const servicio = servicios.find(s => s.id === idServicioSeleccionado);
+    return servicio ? servicio.nombre : 'Selecciona un servicio';
+  };
 
   return (
     <Modal visible={visible} transparent={true} animationType="fade">
@@ -100,23 +110,34 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
               </TouchableOpacity>
             </View>
 
-            {/* 🌟 SELECTOR DE SERVICIOS (Solo si es cita) */}
-            {tipo === 'cita' && servicios.length > 0 && (
+            {tipo === 'cita' && (
               <View style={{ marginBottom: 15 }}>
                 <Text style={styles.label}>Servicio Solicitado</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexDirection: 'row' }}>
-                  {servicios.map((s) => (
-                    <TouchableOpacity 
-                      key={s.id} 
-                      style={[styles.serviceChip, idServicioSeleccionado === s.id && styles.serviceChipActive]}
-                      onPress={() => setIdServicioSeleccionado(s.id)}
-                    >
-                      <Text style={[styles.serviceChipText, idServicioSeleccionado === s.id && styles.serviceChipTextActive]}>
-                        {s.nombre}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+                
+                <DropdownButton 
+                  title={getServicioSeleccionadoNombre()}
+                  variant="outline"
+                  icon={<Ionicons name="cut-outline" size={18} color="#3b82f6" />}
+                >
+                  {servicios.length === 0 ? (
+                    <Text style={styles.emptyText}>No hay servicios en tu catálogo actual.</Text>
+                  ) : (
+                    servicios.map((s) => (
+                      <TouchableOpacity 
+                        key={s.id} 
+                        style={[styles.dropdownItem, idServicioSeleccionado === s.id && styles.dropdownItemActive]}
+                        onPress={() => setIdServicioSeleccionado(s.id)}
+                      >
+                        <Text style={[styles.dropdownItemText, idServicioSeleccionado === s.id && styles.dropdownItemTextActive]}>
+                          {s.nombre}  <Text style={{color: '#94a3b8', fontSize: 12}}>(${s.costo})</Text>
+                        </Text>
+                        {idServicioSeleccionado === s.id && (
+                          <Ionicons name="checkmark-circle" size={20} color="#3b82f6" />
+                        )}
+                      </TouchableOpacity>
+                    ))
+                  )}
+                </DropdownButton>
               </View>
             )}
 
@@ -182,15 +203,13 @@ const styles = StyleSheet.create({
   typeText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
   label: { fontSize: 13, fontWeight: '700', color: '#475569', marginBottom: 6, marginLeft: 4, textTransform: 'uppercase' },
   input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, paddingHorizontal: 15, paddingVertical: 12, fontSize: 15, color: '#1e293b', marginBottom: 15 },
-  
-  serviceChip: { paddingHorizontal: 15, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f1f5f9', marginRight: 10, borderWidth: 1, borderColor: '#cbd5e1' },
-  serviceChipActive: { backgroundColor: '#eff6ff', borderColor: '#3b82f6' },
-  serviceChipText: { fontSize: 13, color: '#64748b', fontWeight: '600' },
-  serviceChipTextActive: { color: '#3b82f6' },
-
+  dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  dropdownItemActive: { backgroundColor: '#eff6ff', borderRadius: 8, borderBottomWidth: 0 },
+  dropdownItemText: { fontSize: 14, color: '#475569', fontWeight: '500' },
+  dropdownItemTextActive: { color: '#3b82f6', fontWeight: '700' },
+  emptyText: { fontSize: 14, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', paddingVertical: 10 },
   dateSelectorBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 12, marginBottom: 15, gap: 5 },
   dateSelectorText: { fontSize: 14, color: '#1e293b', fontWeight: '500' },
-  
   textArea: { height: 80, textAlignVertical: 'top' },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
   footer: { padding: 20, borderTopWidth: 1, borderTopColor: '#f1f5f9', backgroundColor: '#ffffff' },

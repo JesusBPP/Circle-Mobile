@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, LayoutAnimation, Platform, UIManager, Alert } from 'react-native';
-import { router } from 'expo-router';
+// 🌟 IMPORTAMOS useFocusEffect PARA RECARGAR DATOS AL VOLVER A LA PANTALLA
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { FondoManager } from '../../../ui/Fondo'; 
@@ -29,36 +30,34 @@ export default function AgendaIndex() {
   
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  useEffect(() => {
-    const fetchCitas = async () => {
-      if (negocioId) {
-        try {
-          const data = await agendaService.obtenerCitas(negocioId);
-          setCitasRaw(data);
-        } catch (error) {
-          console.error("Error al cargar la agenda:", error);
-        } finally {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          setIsLoading(false);
+  // 🌟 CAMBIO CLAVE: Cambiamos useEffect por useFocusEffect.
+  // Esto hace que cada vez que regreses a esta pantalla, haga el Fetch de nuevo y actualice los colores/horas.
+  useFocusEffect(
+    useCallback(() => {
+      const fetchCitas = async () => {
+        if (negocioId) {
+          try {
+            const data = await agendaService.obtenerCitas(negocioId);
+            setCitasRaw(data);
+          } catch (error) {
+            console.error("Error al cargar la agenda:", error);
+          } finally {
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            setIsLoading(false);
+          }
         }
-      }
-    };
-    fetchCitas();
-  }, [negocioId]);
+      };
+      fetchCitas();
+    }, [negocioId])
+  );
 
-  // ==========================================
-  // 🌟 FUNCIÓN DE GUARDADO REAL EN POSTGRESQL
-  // ==========================================
   const handleGuardarCita = async (nuevaCita: any) => {
     if (!negocioId) return;
 
     try {
-      // Agregamos id_sucursal: 1 temporalmente hasta que haya multi-sucursal en UI
       const citaConSucursal = { ...nuevaCita, id_sucursal: 1 };
-      
       const citaGuardada = await agendaService.crearCita(negocioId, citaConSucursal);
       
-      // Actualizamos la UI en tiempo real sumando la nueva cita que regresó la BD
       setCitasRaw(prev => [...prev, citaGuardada]);
       setIsModalVisible(false);
       Alert.alert("Éxito", "Actividad agendada correctamente.");
@@ -86,7 +85,7 @@ export default function AgendaIndex() {
   const mapCitaToCard = (cita: any) => {
     return {
       id: cita.id,
-      tipo: cita.tipo, // 🌟 AHORA LO LEEMOS DIRECTO DEL BACKEND
+      tipo: cita.tipo, 
       titulo: cita.titulo || "Actividad Agendada",
       descripcion: cita.descripcion || 'Sin descripción',
       horaInicio: formatHora(cita.fecha_hora_inicio),
@@ -244,7 +243,7 @@ export default function AgendaIndex() {
 
         <CrearCita 
           visible={isModalVisible} 
-          negocioId={negocioId} // 🌟 PASAMOS EL ID PARA QUE CARGUE LOS SERVICIOS
+          negocioId={negocioId}
           onClose={() => setIsModalVisible(false)} 
           onSave={handleGuardarCita} 
         />

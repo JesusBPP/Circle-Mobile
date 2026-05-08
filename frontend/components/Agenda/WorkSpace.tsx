@@ -20,10 +20,18 @@ export const WorkSpace = ({ citaMock, onGuardarEdicion }: WorkSpaceProps) => {
   const [descripcion, setDescripcion] = useState(citaMock.descripcion || '');
   const [notasInternas, setNotasInternas] = useState(citaMock.notas_internas || '');
 
-  // 🌟 ESTADOS PARA REPROGRAMACIÓN (Máquina de Estados)
+  const [isReprogramming, setIsReprogramming] = useState(false);
+  
+  const fechaOriginal = new Date(citaMock.fecha_hora_inicio_raw || new Date());
+  const finOriginal = citaMock.fecha_hora_fin_raw ? new Date(citaMock.fecha_hora_fin_raw) : new Date(fechaOriginal.getTime() + 60*60*1000);
+
+  const [editFecha, setEditFecha] = useState(fechaOriginal);
+  const [editHoraInicio, setEditHoraInicio] = useState(fechaOriginal);
+  const [editHoraFin, setEditHoraFin] = useState(finOriginal);
+
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
-  const [tempFechaReprogramada, setTempFechaReprogramada] = useState(new Date(citaMock.fecha_hora_inicio_raw));
+  const [showInicioPicker, setShowInicioPicker] = useState(false);
+  const [showFinPicker, setShowFinPicker] = useState(false);
 
   const haCambiado = descripcion !== (citaMock.descripcion || '') || notasInternas !== (citaMock.notas_internas || '');
 
@@ -33,46 +41,53 @@ export const WorkSpace = ({ citaMock, onGuardarEdicion }: WorkSpaceProps) => {
     }
   };
 
-  // 🌟 PATRÓN DE ESTADO: MÁQUINA DE TRANSICIONES
-  // Definimos qué botones mostrar dependiendo del estado actual
   const transicionesValidas: Record<string, string[]> = {
     'Programada': ['Reprogramada', 'Finalizada', 'Cancelada'],
     'Reprogramada': ['Reprogramada', 'Finalizada', 'Cancelada'],
     'Pendiente': ['Programada', 'Finalizada', 'Cancelada'],
-    'Finalizada': [], // Estado Terminal
-    'Cancelada': []   // Estado Terminal
+    'Finalizada': [], 
+    'Cancelada': []   
   };
 
   const estadosPermitidos = transicionesValidas[citaMock.estado] || [];
 
   const handleCambioEstado = (nuevoEstado: string) => {
     if (nuevoEstado === 'Reprogramada') {
-      // Si quiere reprogramar, lanzamos los calendarios
-      setShowDatePicker(true);
+      setIsReprogramming(true);
     } else {
-      // Si cancela o finaliza, guardamos directamente
       if (onGuardarEdicion) onGuardarEdicion({ estado: nuevoEstado });
     }
   };
 
-  const confirmarReprogramacion = (fechaFinal: Date) => {
-    // Calculamos una hora extra como fin por defecto (luego mejoraremos esto)
-    const fechaFin = new Date(fechaFinal);
-    fechaFin.setHours(fechaFin.getHours() + 1);
+  // 🌟 EL TRUCO MAESTRO: Extraer los números locales directamente
+  const getLocalISOString = (date: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
+  };
+
+  const confirmarReprogramacion = () => {
+    const fechaHoraInicio = new Date(editFecha);
+    fechaHoraInicio.setHours(editHoraInicio.getHours(), editHoraInicio.getMinutes(), 0);
+
+    const fechaHoraFin = new Date(editFecha);
+    fechaHoraFin.setHours(editHoraFin.getHours(), editHoraFin.getMinutes(), 0);
 
     if (onGuardarEdicion) {
       onGuardarEdicion({
         estado: 'Reprogramada',
-        fecha_hora_inicio: fechaFinal.toISOString(),
-        fecha_hora_fin: fechaFin.toISOString()
+        fecha_hora_inicio: getLocalISOString(fechaHoraInicio),
+        fecha_hora_fin: getLocalISOString(fechaHoraFin)
       });
     }
+    setIsReprogramming(false);
   };
+
+  const formatDateStr = (date: Date) => date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
+  const formatTimeStr = (date: Date) => date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       
-      {/* TARJETA 1: INFORMACIÓN Y MÁQUINA DE ESTADOS */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Ionicons name="information-circle" size={20} color={colorPrincipal} />
@@ -91,8 +106,7 @@ export const WorkSpace = ({ citaMock, onGuardarEdicion }: WorkSpaceProps) => {
           <Text style={[styles.infoValue, { fontWeight: 'bold', color: colorPrincipal }]}>{citaMock.estado}</Text>
         </View>
 
-        {/* 🌟 MÁQUINA DE ESTADOS: BOTONES DE TRANSICIÓN */}
-        {estadosPermitidos.length > 0 && (
+        {!isReprogramming && estadosPermitidos.length > 0 && (
           <View style={styles.transitionsContainer}>
             <Text style={styles.sectionSubtitle}>Cambiar Estado a:</Text>
             <View style={styles.buttonsRow}>
@@ -117,41 +131,49 @@ export const WorkSpace = ({ citaMock, onGuardarEdicion }: WorkSpaceProps) => {
             </View>
           </View>
         )}
+
+        {isReprogramming && (
+          <View style={styles.reprogramContainer}>
+            <Text style={[styles.sectionSubtitle, { color: '#3b82f6' }]}>Selecciona el Nuevo Horario:</Text>
+            
+            <View style={styles.row}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <Text style={styles.label}>Fecha</Text>
+                <TouchableOpacity style={styles.dateSelectorBtn} onPress={() => setShowDatePicker(true)}>
+                  <Ionicons name="calendar-outline" size={16} color="#475569" />
+                  <Text style={styles.dateSelectorText}>{formatDateStr(editFecha)}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ flex: 0.5, paddingRight: 5 }}>
+                <Text style={styles.label}>Inicio</Text>
+                <TouchableOpacity style={styles.dateSelectorBtn} onPress={() => setShowInicioPicker(true)}>
+                  <Text style={styles.dateSelectorText}>{formatTimeStr(editHoraInicio)}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={{ flex: 0.5, paddingLeft: 5 }}>
+                <Text style={styles.label}>Fin</Text>
+                <TouchableOpacity style={styles.dateSelectorBtn} onPress={() => setShowFinPicker(true)}>
+                  <Text style={styles.dateSelectorText}>{formatTimeStr(editHoraFin)}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.reprogramActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsReprogramming(false)}>
+                <Text style={styles.cancelBtnText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmBtn} onPress={confirmarReprogramacion}>
+                <Text style={styles.confirmBtnText}>Confirmar Horario</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
 
-      {/* SELECTORES NATIVOS PARA REPROGRAMAR */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={tempFechaReprogramada}
-          mode="date"
-          display="default"
-          onChange={(event, date) => {
-            setShowDatePicker(Platform.OS === 'ios');
-            if (date) {
-              setTempFechaReprogramada(date);
-              setShowTimePicker(true); // Al elegir fecha, abrimos la hora
-            }
-          }}
-        />
-      )}
-      {showTimePicker && (
-        <DateTimePicker
-          value={tempFechaReprogramada}
-          mode="time"
-          display="default"
-          onChange={(event, time) => {
-            setShowTimePicker(Platform.OS === 'ios');
-            if (time) {
-              const nueva = new Date(tempFechaReprogramada);
-              nueva.setHours(time.getHours(), time.getMinutes(), 0);
-              setTempFechaReprogramada(nueva);
-              confirmarReprogramacion(nueva); // Enviamos al Backend
-            }
-          }}
-        />
-      )}
+      {showDatePicker && (<DateTimePicker value={editFecha} mode="date" display="default" onChange={(e, d) => { setShowDatePicker(Platform.OS === 'ios'); if (d) setEditFecha(d); }}/>)}
+      {showInicioPicker && (<DateTimePicker value={editHoraInicio} mode="time" display="default" onChange={(e, t) => { setShowInicioPicker(Platform.OS === 'ios'); if (t) setEditHoraInicio(t); }}/>)}
+      {showFinPicker && (<DateTimePicker value={editHoraFin} mode="time" display="default" onChange={(e, t) => { setShowFinPicker(Platform.OS === 'ios'); if (t) setEditHoraFin(t); }}/>)}
 
-      {/* TARJETA 2: DESCRIPCIÓN Y NOTAS */}
       <View style={styles.card}>
         <View style={[styles.cardHeader, { justifyContent: 'space-between' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -203,13 +225,20 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: 14, color: '#64748b', fontWeight: '500' },
   infoValue: { fontSize: 14, color: '#1e293b', fontWeight: '600', maxWidth: '70%', textAlign: 'right' },
   sectionSubtitle: { fontSize: 12, fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 },
-  
-  // 🌟 ESTILOS MÁQUINA DE ESTADO
   transitionsContainer: { marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
   buttonsRow: { flexDirection: 'row', gap: 10, marginTop: 5, flexWrap: 'wrap' },
   stateBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
   stateBtnText: { fontSize: 12, fontWeight: 'bold' },
-
+  reprogramContainer: { marginTop: 15, paddingTop: 15, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  row: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  label: { fontSize: 11, fontWeight: '700', color: '#475569', marginBottom: 6, marginLeft: 4, textTransform: 'uppercase' },
+  dateSelectorBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 10, gap: 5 },
+  dateSelectorText: { fontSize: 12, color: '#1e293b', fontWeight: '500' },
+  reprogramActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 15 },
+  cancelBtn: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8, backgroundColor: '#f1f5f9' },
+  cancelBtnText: { fontSize: 13, fontWeight: 'bold', color: '#64748b' },
+  confirmBtn: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8, backgroundColor: '#3b82f6' },
+  confirmBtnText: { fontSize: 13, fontWeight: 'bold', color: '#ffffff' },
   textInput: { backgroundColor: '#f8fafc', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', fontSize: 14, color: '#334155', minHeight: 80, textAlignVertical: 'top' },
   internalInput: { backgroundColor: '#fffbeb', borderColor: '#fef08a', color: '#92400e' }
 });

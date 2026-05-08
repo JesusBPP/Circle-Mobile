@@ -129,7 +129,13 @@ def llenar_base_datos():
         print("🏷️ Creando Catálogo Unificado (Productos y Servicios)...")
         prod_capuchino = catalogo_models.ServicioProducto(nombre="Capuchino Grande", costo=65.00, tipo_producto="producto")
         serv_corte = catalogo_models.ServicioProducto(nombre="Corte de Cabello Clásico", costo=250.00, tipo_producto="servicio")
-        db.add_all([prod_capuchino, serv_corte])
+        
+        # 🌟 NUEVOS SERVICIOS AÑADIDOS PARA PROBAR EL DROPDOWN DE AGENDA
+        serv_reserva = catalogo_models.ServicioProducto(nombre="Reserva de Mesa VIP", costo=100.00, tipo_producto="servicio")
+        serv_cata = catalogo_models.ServicioProducto(nombre="Cata de Café de Especialidad", costo=350.00, tipo_producto="servicio")
+        serv_barba = catalogo_models.ServicioProducto(nombre="Arreglo de Barba Premium", costo=180.00, tipo_producto="servicio")
+        
+        db.add_all([prod_capuchino, serv_corte, serv_reserva, serv_cata, serv_barba])
         db.commit()
 
         print("🪙 Configurando Programa de Lealtad para Cafetería El Grano...")
@@ -163,7 +169,13 @@ def llenar_base_datos():
         print("📍 Asignando Catálogo a Sucursales (Disponibilidad)...")
         disp_cafe = catalogo_models.ServicioDisponible(id_servicio_producto=prod_capuchino.id, id_sucursal=sucursal_cafe.id)
         disp_corte = catalogo_models.ServicioDisponible(id_servicio_producto=serv_corte.id, id_sucursal=sucursal_barber.id)
-        db.add_all([disp_cafe, disp_corte])
+        
+        # 🌟 NUEVAS ASIGNACIONES DE DISPONIBILIDAD PARA LOS SERVICIOS
+        disp_reserva = catalogo_models.ServicioDisponible(id_servicio_producto=serv_reserva.id, id_sucursal=sucursal_cafe.id)
+        disp_cata = catalogo_models.ServicioDisponible(id_servicio_producto=serv_cata.id, id_sucursal=sucursal_cafe.id)
+        disp_barba = catalogo_models.ServicioDisponible(id_servicio_producto=serv_barba.id, id_sucursal=sucursal_barber.id)
+        
+        db.add_all([disp_cafe, disp_corte, disp_reserva, disp_cata, disp_barba])
         db.commit()
 
         print("🎁 Creando Ofertas de Lealtad en Sucursales...")
@@ -237,6 +249,15 @@ def llenar_base_datos():
         db.add_all([cita_barberia, cita_carlos_1, cita_carlos_2, cita_carlos_3, cita_carlos_4])
         db.commit()
         # ========================================================
+
+        # 🌟 Conectando las citas con los servicios para que el backend las reconozca como "citas" y no como "eventos"
+        citas_servicios_vinc = [
+            agenda_models.CitaServicio(id_cita=cita_barberia.id, id_servicio_producto=serv_corte.id),
+            agenda_models.CitaServicio(id_cita=cita_carlos_1.id, id_servicio_producto=serv_cata.id),
+            agenda_models.CitaServicio(id_cita=cita_carlos_2.id, id_servicio_producto=serv_reserva.id),
+        ]
+        db.add_all(citas_servicios_vinc)
+        db.commit()
 
         print("✅ ¡Base de datos llenada con éxito incluyendo Soluciones, Lealtad y Agenda Completa!")
 
