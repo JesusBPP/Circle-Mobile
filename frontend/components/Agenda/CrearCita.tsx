@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { agendaService } from '../../features/agenda/agendaService';
 import { DropdownButton } from '../../ui/DropdownButton';
+// 🌟 IMPORTAMOS EL COMPONENTE UI REUTILIZABLE
+import { BuscadorUsuarios } from '../../ui/BuscadorUsuarios';
 
 interface CrearCitaProps {
   visible: boolean;
@@ -29,6 +31,12 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
   const [servicios, setServicios] = useState<any[]>([]);
   const [idServicioSeleccionado, setIdServicioSeleccionado] = useState<number | null>(null);
 
+  // 🌟 ESTADO PARA EL CLIENTE VINCULADO
+  const [clienteSeleccionado, setClienteSeleccionado] = useState<any>(null);
+
+  // 🌟 SOLUCIÓN AL ERROR: Declaramos la variable de colorDinámico aquí
+  const colorActivo = tipo === 'cita' ? 'rgb(15, 82, 186)' : 'rgb(34, 139, 34)';
+
   useEffect(() => {
     if (visible && negocioId) {
       agendaService.obtenerServiciosNegocio(negocioId).then(data => {
@@ -38,9 +46,6 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
     }
   }, [visible, negocioId]);
 
-  const colorActivo = tipo === 'cita' ? 'rgb(15, 82, 186)' : 'rgb(34, 139, 34)'; 
-
-  // 🌟 FUNCIÓN MAESTRA DE FECHAS
   const getLocalISOString = (date: Date) => {
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
@@ -61,7 +66,8 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
       numero_bloques: 2, 
       notas_internas: notasInternas,
       estado: 'Programada',
-      id_servicio_producto: tipo === 'cita' ? idServicioSeleccionado : null
+      id_servicio_producto: tipo === 'cita' ? idServicioSeleccionado : null,
+      id_usuario_consumidor: clienteSeleccionado ? clienteSeleccionado.id : null
     };
     onSave(nuevaCita);
     limpiarFormulario();
@@ -74,6 +80,7 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
     setFecha(new Date());
     setHoraInicio(new Date());
     setHoraFin(new Date(new Date().setHours(new Date().getHours() + 1)));
+    setClienteSeleccionado(null);
   };
 
   const formatDateStr = (date: Date) => date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -89,7 +96,6 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
     <Modal visible={visible} transparent={true} animationType="fade">
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.modalOverlay}>
         <View style={styles.formContainer}>
-          
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Nueva Actividad</Text>
             <TouchableOpacity onPress={() => { limpiarFormulario(); onClose(); }} style={styles.closeBtn}>
@@ -110,30 +116,34 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
               </TouchableOpacity>
             </View>
 
+            {/* 🌟 VINCULACIÓN DE CLIENTE (OPCIONAL) */}
+            {tipo === 'cita' && (
+              <View style={{ marginBottom: 15 }}>
+                <Text style={styles.label}>Vincular Cliente (Opcional)</Text>
+                {clienteSeleccionado ? (
+                  <View style={styles.clienteSeleccionadoBox}>
+                    <Text style={styles.clienteSeleccionadoText}>{clienteSeleccionado.nombre}</Text>
+                    <TouchableOpacity onPress={() => setClienteSeleccionado(null)}>
+                      <Ionicons name="close-circle" size={20} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  negocioId && <BuscadorUsuarios negocioId={negocioId} onSelect={(usr) => setClienteSeleccionado(usr)} />
+                )}
+              </View>
+            )}
+
             {tipo === 'cita' && (
               <View style={{ marginBottom: 15 }}>
                 <Text style={styles.label}>Servicio Solicitado</Text>
-                
-                <DropdownButton 
-                  title={getServicioSeleccionadoNombre()}
-                  variant="outline"
-                  icon={<Ionicons name="cut-outline" size={18} color="#3b82f6" />}
-                >
+                <DropdownButton title={getServicioSeleccionadoNombre()} variant="outline" icon={<Ionicons name="cut-outline" size={18} color="#3b82f6" />}>
                   {servicios.length === 0 ? (
-                    <Text style={styles.emptyText}>No hay servicios en tu catálogo actual.</Text>
+                    <Text style={styles.emptyText}>No hay servicios en tu catálogo.</Text>
                   ) : (
                     servicios.map((s) => (
-                      <TouchableOpacity 
-                        key={s.id} 
-                        style={[styles.dropdownItem, idServicioSeleccionado === s.id && styles.dropdownItemActive]}
-                        onPress={() => setIdServicioSeleccionado(s.id)}
-                      >
-                        <Text style={[styles.dropdownItemText, idServicioSeleccionado === s.id && styles.dropdownItemTextActive]}>
-                          {s.nombre}  <Text style={{color: '#94a3b8', fontSize: 12}}>(${s.costo})</Text>
-                        </Text>
-                        {idServicioSeleccionado === s.id && (
-                          <Ionicons name="checkmark-circle" size={20} color="#3b82f6" />
-                        )}
+                      <TouchableOpacity key={s.id} style={[styles.dropdownItem, idServicioSeleccionado === s.id && styles.dropdownItemActive]} onPress={() => setIdServicioSeleccionado(s.id)}>
+                        <Text style={[styles.dropdownItemText, idServicioSeleccionado === s.id && styles.dropdownItemTextActive]}>{s.nombre}  <Text style={{color: '#94a3b8', fontSize: 12}}>(${s.costo})</Text></Text>
+                        {idServicioSeleccionado === s.id && <Ionicons name="checkmark-circle" size={20} color="#3b82f6" />}
                       </TouchableOpacity>
                     ))
                   )}
@@ -179,6 +189,7 @@ export const CrearCita = ({ visible, negocioId, onClose, onSave }: CrearCitaProp
           </ScrollView>
 
           <View style={styles.footer}>
+            {/* 🌟 AQUÍ UTILIZAMOS LA VARIABLE ARREGLADA */}
             <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colorActivo }]} onPress={handleGuardar}>
               <Text style={styles.saveBtnText}>Crear Actividad</Text>
               <Ionicons name="checkmark-circle-outline" size={20} color="#fff" />
@@ -203,6 +214,10 @@ const styles = StyleSheet.create({
   typeText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
   label: { fontSize: 13, fontWeight: '700', color: '#475569', marginBottom: 6, marginLeft: 4, textTransform: 'uppercase' },
   input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, paddingHorizontal: 15, paddingVertical: 12, fontSize: 15, color: '#1e293b', marginBottom: 15 },
+  
+  clienteSeleccionadoBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#bfdbfe', borderRadius: 10, padding: 12, marginBottom: 15 },
+  clienteSeleccionadoText: { fontSize: 14, fontWeight: 'bold', color: '#1e40af' },
+
   dropdownItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 10, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   dropdownItemActive: { backgroundColor: '#eff6ff', borderRadius: 8, borderBottomWidth: 0 },
   dropdownItemText: { fontSize: 14, color: '#475569', fontWeight: '500' },

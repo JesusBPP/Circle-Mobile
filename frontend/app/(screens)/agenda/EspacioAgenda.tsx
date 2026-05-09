@@ -5,40 +5,66 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { FondoManager } from '../../../ui/Fondo';
 import { WorkSpace } from '../../../components/Agenda/WorkSpace';
-
+import { InfoConsumidor } from '../../../components/Agenda/InfoConsumidor';
 import { agendaService } from '../../../features/agenda/agendaService';
+import { useAuthStore } from '../../../store/useAuthStore'; // 🌟 Para tener el negocioId
 
 export default function EspacioAgenda() {
   const { id_cita } = useLocalSearchParams();
+  const { negocioId } = useAuthStore();
   
   const [citaBaseDatos, setCitaBaseDatos] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchDetallesCita = async () => {
-      if (id_cita) {
-        try {
-          const data = await agendaService.obtenerCitaPorId(Number(id_cita));
-          setCitaBaseDatos(data);
-        } catch (error) {
-          console.error(error);
-          Alert.alert("Error", "No se pudieron cargar los detalles de la actividad.");
-        } finally {
-          setIsLoading(false);
-        }
+  const [consumidorSeleccionado, setConsumidorSeleccionado] = useState<any>(null);
+  const [isInfoVisible, setIsInfoVisible] = useState(false);
+
+  const fetchDetallesCita = async () => {
+    if (id_cita) {
+      try {
+        const data = await agendaService.obtenerCitaPorId(Number(id_cita));
+        setCitaBaseDatos(data);
+      } catch (error) {
+        Alert.alert("Error", "No se pudieron cargar los detalles.");
+      } finally {
+        setIsLoading(false);
       }
-    };
-    fetchDetallesCita();
-  }, [id_cita]);
+    }
+  };
+
+  useEffect(() => { fetchDetallesCita(); }, [id_cita]);
 
   const handleGuardarEdicion = async (nuevosDatos: any) => {
     try {
-      // Si recibimos un error 400 (Empalme de horario), caerá al Catch e imprimirá el Alert
       const actualizada = await agendaService.actualizarCita(Number(id_cita), nuevosDatos);
       setCitaBaseDatos(actualizada);
-      Alert.alert("Éxito", "Cambios guardados correctamente.");
+      Alert.alert("Éxito", "Cambios guardados.");
     } catch (error: any) {
       Alert.alert("Cuidado", error.message);
+    }
+  };
+
+  // 🌟 FUNCIÓN: Vincular Consumidor a Cita
+  const handleVincularConsumidor = async (usuario: any) => {
+    try {
+      await agendaService.vincularConsumidor(Number(id_cita), usuario.id);
+      Alert.alert("Éxito", `${usuario.nombre} vinculado a la actividad.`);
+      fetchDetallesCita(); // Recargamos para que aparezca en la lista
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
+  // 🌟 FUNCIÓN: Clic a Consumidor (Trae su historial de notas del Backend)
+  const handleAbrirInfoConsumidor = async (consumidor: any) => {
+    if (!negocioId) return;
+    try {
+      // Usamos el Endpoint CRM para obtener todo el historial real
+      const perfilCompleto = await agendaService.obtenerHistorialConsumidor(negocioId, consumidor.id);
+      setConsumidorSeleccionado(perfilCompleto);
+      setIsInfoVisible(true);
+    } catch (error: any) {
+      Alert.alert("Error", "No se pudo cargar el historial del cliente.");
     }
   };
 
@@ -60,32 +86,26 @@ export default function EspacioAgenda() {
   let colorPrincipal = '#cbd5e1';
 
   if (citaBaseDatos) {
-    
     citaTransformada = {
       id: citaBaseDatos.id,
-      tipo: citaBaseDatos.tipo, // Directo del Backend
+      tipo: citaBaseDatos.tipo, 
       titulo: citaBaseDatos.titulo || 'Actividad',
       descripcion: citaBaseDatos.descripcion || '',
       horaInicio: formatHora(citaBaseDatos.fecha_hora_inicio),
       horaFin: formatHora(citaBaseDatos.fecha_hora_fin),
       fechaSimple: formatFechaParaCard(citaBaseDatos.fecha_hora_inicio),
       fecha_hora_inicio_raw: citaBaseDatos.fecha_hora_inicio, 
-      cliente: citaBaseDatos.cliente,
       estado: citaBaseDatos.estado,
-      notas_internas: citaBaseDatos.notas_internas || ''
+      notas_internas: citaBaseDatos.notas_internas || '',
+      // 🌟 Consumidores que ya viajan desde el backend
+      consumidores_vinculados: citaBaseDatos.consumidores_vinculados || []
     };
 
-    // 🌟 SOLUCIÓN PUNTO 1: Barra Color Rojo Mate para Canceladas
     const esFinalizada = citaTransformada.estado === 'Finalizada';
     const esCancelada = citaTransformada.estado === 'Cancelada';
-
-    if (esCancelada) {
-      colorPrincipal = 'rgb(200, 70, 70)'; // Rojo Mate
-    } else if (esFinalizada) {
-      colorPrincipal = 'rgb(212, 175, 55)'; // Dorado
-    } else {
-      colorPrincipal = citaBaseDatos.tipo === 'cita' ? 'rgb(15, 82, 186)' : 'rgb(34, 139, 34)';
-    }
+    if (esCancelada) colorPrincipal = 'rgb(200, 70, 70)'; 
+    else if (esFinalizada) colorPrincipal = 'rgb(212, 175, 55)'; 
+    else colorPrincipal = citaBaseDatos.tipo === 'cita' ? 'rgb(15, 82, 186)' : 'rgb(34, 139, 34)';
   }
 
   return (
@@ -96,18 +116,15 @@ export default function EspacioAgenda() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#1e293b" />
           </TouchableOpacity>
-          
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Workspace</Text>
             {citaTransformada && <Text style={[styles.headerSubtitle, { color: colorPrincipal }]}>{citaTransformada.fechaSimple}</Text>}
           </View>
-          
           <TouchableOpacity style={styles.optionsButton}>
             <Ionicons name="ellipsis-vertical" size={20} color="#64748b" />
           </TouchableOpacity>
         </View>
 
-        {/* 🌟 LA BARRA AHORA RESPETA EL ROJO MATE */}
         <View style={[styles.topColorBand, { backgroundColor: colorPrincipal }]} />
 
         {isLoading ? (
@@ -115,12 +132,20 @@ export default function EspacioAgenda() {
         ) : (
            citaTransformada && (
              <WorkSpace 
+                negocioId={negocioId as number} // 🌟 Necesario para la búsqueda
                 citaMock={citaTransformada} 
                 onGuardarEdicion={handleGuardarEdicion} 
+                onVincularConsumidor={handleVincularConsumidor} 
+                onConsumerClick={handleAbrirInfoConsumidor} 
              />
            )
         )}
 
+        <InfoConsumidor 
+          visible={isInfoVisible} 
+          consumidor={consumidorSeleccionado} 
+          onClose={() => setIsInfoVisible(false)} 
+        />
       </View>
     </FondoManager>
   );

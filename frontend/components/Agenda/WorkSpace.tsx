@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+// 🌟 IMPORTAMOS EL COMPONENTE
+import { BuscadorUsuarios } from '../../ui/BuscadorUsuarios';
 
 interface WorkSpaceProps {
+  negocioId: number; // 🌟 Necesario para buscar
   citaMock: any; 
   onGuardarEdicion?: (nuevosDatos: any) => void;
+  onVincularConsumidor?: (usuario: any) => void; // 🌟 Para vincular en vivo
+  onConsumerClick?: (consumidor: any) => void;
 }
 
-export const WorkSpace = ({ citaMock, onGuardarEdicion }: WorkSpaceProps) => {
+export const WorkSpace = ({ negocioId, citaMock, onGuardarEdicion, onVincularConsumidor, onConsumerClick }: WorkSpaceProps) => {
   const esCita = citaMock.tipo === 'cita';
   const esCancelada = citaMock.estado === 'Cancelada';
   const esFinalizada = citaMock.estado === 'Finalizada';
@@ -45,10 +50,8 @@ export const WorkSpace = ({ citaMock, onGuardarEdicion }: WorkSpaceProps) => {
     'Programada': ['Reprogramada', 'Finalizada', 'Cancelada'],
     'Reprogramada': ['Reprogramada', 'Finalizada', 'Cancelada'],
     'Pendiente': ['Programada', 'Finalizada', 'Cancelada'],
-    'Finalizada': [], 
-    'Cancelada': []   
+    'Finalizada': [], 'Cancelada': []   
   };
-
   const estadosPermitidos = transicionesValidas[citaMock.estado] || [];
 
   const handleCambioEstado = (nuevoEstado: string) => {
@@ -59,7 +62,6 @@ export const WorkSpace = ({ citaMock, onGuardarEdicion }: WorkSpaceProps) => {
     }
   };
 
-  // 🌟 EL TRUCO MAESTRO: Extraer los números locales directamente
   const getLocalISOString = (date: Date) => {
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
@@ -135,7 +137,6 @@ export const WorkSpace = ({ citaMock, onGuardarEdicion }: WorkSpaceProps) => {
         {isReprogramming && (
           <View style={styles.reprogramContainer}>
             <Text style={[styles.sectionSubtitle, { color: '#3b82f6' }]}>Selecciona el Nuevo Horario:</Text>
-            
             <View style={styles.row}>
               <View style={{ flex: 1, paddingRight: 10 }}>
                 <Text style={styles.label}>Fecha</Text>
@@ -157,14 +158,9 @@ export const WorkSpace = ({ citaMock, onGuardarEdicion }: WorkSpaceProps) => {
                 </TouchableOpacity>
               </View>
             </View>
-
             <View style={styles.reprogramActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsReprogramming(false)}>
-                <Text style={styles.cancelBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.confirmBtn} onPress={confirmarReprogramacion}>
-                <Text style={styles.confirmBtnText}>Confirmar Horario</Text>
-              </TouchableOpacity>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setIsReprogramming(false)}><Text style={styles.cancelBtnText}>Cancelar</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.confirmBtn} onPress={confirmarReprogramacion}><Text style={styles.confirmBtnText}>Confirmar</Text></TouchableOpacity>
             </View>
           </View>
         )}
@@ -180,7 +176,6 @@ export const WorkSpace = ({ citaMock, onGuardarEdicion }: WorkSpaceProps) => {
             <Ionicons name="document-text" size={20} color="#475569" />
             <Text style={styles.cardTitle}>Descripción y Notas</Text>
           </View>
-          
           {haCambiado && (
             <TouchableOpacity style={styles.saveBadge} onPress={handleGuardarTextos}>
               <Ionicons name="save-outline" size={14} color="#fff" />
@@ -188,28 +183,43 @@ export const WorkSpace = ({ citaMock, onGuardarEdicion }: WorkSpaceProps) => {
             </TouchableOpacity>
           )}
         </View>
-
         <Text style={styles.sectionSubtitle}>Descripción (Visible para el cliente)</Text>
-        <TextInput 
-          style={styles.textInput}
-          multiline
-          value={descripcion}
-          onChangeText={setDescripcion}
-          placeholder="Añade una descripción..."
-          placeholderTextColor="#94a3b8"
-        />
-
+        <TextInput style={styles.textInput} multiline value={descripcion} onChangeText={setDescripcion} placeholder="Añade una descripción..." placeholderTextColor="#94a3b8" />
         <Text style={[styles.sectionSubtitle, { marginTop: 15 }]}>Notas Internas (Privado)</Text>
-        <TextInput 
-          style={[styles.textInput, styles.internalInput]}
-          multiline
-          value={notasInternas}
-          onChangeText={setNotasInternas}
-          placeholder="Escribe notas privadas aquí..."
-          placeholderTextColor="#b45309"
-        />
+        <TextInput style={[styles.textInput, styles.internalInput]} multiline value={notasInternas} onChangeText={setNotasInternas} placeholder="Escribe notas privadas aquí..." placeholderTextColor="#b45309" />
       </View>
 
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <Ionicons name="people" size={20} color="#0ea5e9" />
+          <Text style={styles.cardTitle}>Consumidores (CRM)</Text>
+        </View>
+
+        {/* 🌟 AQUÍ USAMOS TU COMPONENTE REUTILIZABLE */}
+        <BuscadorUsuarios 
+          negocioId={negocioId} 
+          onSelect={(usr) => onVincularConsumidor && onVincularConsumidor(usr)} 
+        />
+
+        <Text style={[styles.sectionSubtitle, { marginTop: 10, marginBottom: 8 }]}>Personas en esta cita:</Text>
+        
+        {citaMock.consumidores_vinculados && citaMock.consumidores_vinculados.length > 0 ? (
+          citaMock.consumidores_vinculados.map((cons: any) => (
+            <TouchableOpacity key={cons.id} style={styles.consumerCard} onPress={() => onConsumerClick && onConsumerClick(cons)}>
+              <View style={styles.consumerAvatar}><Text style={styles.consumerAvatarText}>{cons.nombre.charAt(0)}</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.consumerName}>{cons.nombre}</Text>
+                <Text style={styles.consumerEmail}>{cons.correo}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#cbd5e1" />
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text style={styles.emptyFilesText}>No hay consumidores vinculados.</Text>
+        )}
+      </View>
+
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 };
@@ -240,5 +250,11 @@ const styles = StyleSheet.create({
   confirmBtn: { paddingVertical: 8, paddingHorizontal: 15, borderRadius: 8, backgroundColor: '#3b82f6' },
   confirmBtnText: { fontSize: 13, fontWeight: 'bold', color: '#ffffff' },
   textInput: { backgroundColor: '#f8fafc', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', fontSize: 14, color: '#334155', minHeight: 80, textAlignVertical: 'top' },
-  internalInput: { backgroundColor: '#fffbeb', borderColor: '#fef08a', color: '#92400e' }
+  internalInput: { backgroundColor: '#fffbeb', borderColor: '#fef08a', color: '#92400e' },
+  consumerCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, padding: 10, marginBottom: 8 },
+  consumerAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#eff6ff', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  consumerAvatarText: { fontSize: 14, fontWeight: 'bold', color: '#3b82f6' },
+  consumerName: { fontSize: 14, fontWeight: 'bold', color: '#1e293b' },
+  consumerEmail: { fontSize: 12, color: '#64748b' },
+  emptyFilesText: { fontSize: 13, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', marginVertical: 10 }
 });

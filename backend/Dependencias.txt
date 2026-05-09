@@ -3,6 +3,7 @@ pip install "pydantic[email]"
 pip install Pillow
 pip install python-dotenv
 
+
 **************************
 ******** Frontend ********
 **************************
