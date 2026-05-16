@@ -1,28 +1,17 @@
 PROYECTO: CIRCLE - REGISTRO DE PENDIENTES
 
-[x] 1. Instalar PostgreSQL en el equipo.
-[x] 2. Crear ambiente virtual para las librerías de Python (Backend).
-[x] 3. Crear el ambiente para el frontend con React Native.
-[x] 4. Crear archivo (.md) con la arquitectura de archivos del proyecto.
-[x] 5. Crear archivo (.dbml) con la arquitectura de la base de datos.
-[x] 6. Crear la base de datos en PostgreSQL a partir del diseño DBML, modelos ORM (.py) + Alembic.
-[x] 7. Preparar tecnologías para visualizar el frontend (Emuladores/Simuladores móviles).
-[X] 8. Crear biblioteca de componentes básicos (components/ui)
-[X] 9. Crear pantalla de pruebas (app/sandbox.tsx).
-[X] 10. Crear interfaz visual de Login (app/(auth)/login.tsx).
-[X] 11. Conectar Login con el Backend.
-[X] 12. Crear primer componente de la bliblioteca | Pantalla catalogo Inicio_Negocios
-[X] 13. Creación de RadialMenu para el Home de negocios
-[X] 14. Creación de botones
-[ ] 15. Creación de gráficos
-[ ] 16. Creación de tablas
-[ ] 17. Creación de inputs
-[X] 18. Creación de DropdownButton
-[X] 19. Creación de fondos de pantalla
-[ ] 20. Creación de barras inferiores para navegación
-[ ] 21. Creación de componentes para Home de negocio, admin y consumidor
+Usualmente, un main.py de nivel Senior/Enterprise SOLO contiene:
+
+Instanciación de la App: app = FastAPI(...)
+
+Middlewares: Configuración de CORS, seguridad (ej. limitación de peticiones/Rate Limiting) y registro de logs.
+
+Inclusión de Routers: Los app.include_router(...) para conectar todos los módulos (Usuarios, Agenda, Lealtad).
+
+Manejo de Excepciones Globales: Bloques de código que atrapan errores de base de datos y los convierten en mensajes JSON amigables para el celular.
+
+Eventos de Ciclo de Vida (Lifespan): Tareas que se ejecutan cuando el servidor se enciende (ej. conectar a Redis o iniciar conexión a la BD) o se apaga.
 [ ] 22. Revisar la opción de ignore scripts para seguridad.
-[ ] 23. Singleton revisar si lo estamos usando
 _____________________________________________________________________
             ANOTACIONES IMPORTANTES
 
@@ -95,3 +84,22 @@ _____________________________________________________________________
 
 admin1@circle.com
 carlos@negocio.com
+
+
+______________________________________________________________________
+
+PROMPT PARA INICIO DE SESIÓN DE TRABAJO
+
+Rol: Actúa como un Arquitecto de Software Senior y Desarrollador Full-Stack (React Native/Expo + FastAPI/PostgreSQL).
+
+Reglas Estrictas de Operación (Mandatorias):
+
+Cero Suposiciones (No Hallucinations): Bajo ninguna circunstancia debes asumir, obviar o dar por hecho la existencia de código, archivos, funciones, tablas o importaciones que no te haya proporcionado explícitamente o que no hayamos construido juntos en el contexto inmediato. No uses frases como "Asumo que...".
+
+Validación de Incertidumbre: Si para completar una tarea necesitas un archivo, revisar una tabla, o no tienes el 100% de certeza sobre cómo está estructurado un componente, DETENTE. Tu respuesta debe ser pedirme el archivo o la aclaración necesaria antes de escribir una sola línea de código.
+
+Contexto Estricto: Siempre verifica que tu solución esté alineada con la arquitectura de la base de datos (DBML) y el flujo de los componentes. Si pierdes el contexto o la memoria de la conversación se fragmenta, aplica inmediatamente la Regla 2.
+
+Calidad Enterprise y Patrones de Diseño: Queda estrictamente prohibido el código "parche" (hacks/workarounds). Toda solución debe estar justificada bajo buenas prácticas de ingeniería de software. Emplea patrones de diseño (Repository, DTO, Facade, State, Observer, etc.) cuando aplique, asegurando que el sistema sea modular, robusto y altamente escalable.
+
+Instrucción: Confirma que has asimilado estas reglas respondiendo únicamente: "Reglas de arquitectura asimiladas. Entendido. Por favor, indícame qué archivos analizaremos hoy."

@@ -125,20 +125,6 @@ Table Servicios_Disponibles {
   
 }
 
-Table Transacciones {
-  id int [pk, increment]
-  id_usuario_consumidor int [ref: > Usuarios.id]
-  monto_total decimal [not null, note: "Suma de todos los subtotal"]
-  fecha_transaccion timestamp [not null]
-}
-
-Table Detalle_Transaccion {
-  id int [pk, increment]
-  id_transaccion int [not null, ref: > Transacciones.id]
-  id_servicios_productos_disponibles int [ref: > Servicios_Disponibles.id]
-  cantidad int [not null]
-  subtotal decimal [not null, note: "Cantidad por el costo de servicios_productos"]
-}
 
 // ==========================================
 // 4. SOLUCIÓN 1: AGENDA INTELIGENTE
@@ -335,4 +321,94 @@ Table Negocios_Soluciones {
     // Evita que un negocio instale la misma solución dos veces
     (id_negocio, id_solucion) [unique, name: 'idx_negocio_solucion_unica']
   }
+}
+
+// ==========================================
+// 9. MÓDULO DE FEED / PUBLICACIONES DEL NEGOCIO
+// ==========================================
+
+Table Publicaciones {
+  id int [pk, increment]
+  id_negocio int [not null, ref: > Negocios.id, note: "La publicación se muestra a nivel negocio global"]
+  
+  // 🌟 EL ENLACE MÁGICO
+  id_oferta int [ref: > Ofertas.id, note: "Opcional: Si la publicación es para anunciar un descuento, se enlaza aquí para heredar toda la lógica NxN, caducidad y whitelist"]
+  
+  titulo varchar [not null, note: "Ej: '¡Gran promoción de verano!'"]
+  descripcion varchar [not null, note: "El texto descriptivo de la publicación"]
+  url_imagen varchar [note: "Imagen promocional o flyer"]
+  
+  habilitar_comentarios boolean [not null, default: true, note: "El dueño decide si los clientes pueden comentar"]
+  fecha_publicacion timestamp [not null]
+}
+
+Table Comentarios_Publicaciones {
+  id int [pk, increment]
+  id_publicacion int [not null, ref: > Publicaciones.id]
+  id_usuario_consumidor int [not null, ref: > Usuarios.id]
+  
+  texto_comentario varchar [not null]
+  fecha_comentario timestamp [not null]
+}
+
+// ==========================================
+// NUEVO DOMINIO: FINANZAS Y POS (Punto de Venta)
+// ==========================================
+
+// Puntos de cobro físicos en una sucursal
+Table Cajas_Fisicas {
+  id int [pk, increment]
+  id_sucursal int [not null, ref: > Sucursales.id]
+  nombre varchar [not null, note: "Ej: 'Caja Mostrador', 'Caja Principal'"]
+  esta_activa boolean [not null, default: true]
+}
+
+// El 'Turno' o 'Corte' de un empleado en una caja específica
+Table Sesiones_Caja {
+  id int [pk, increment]
+  id_caja_fisica int [not null, ref: > Cajas_Fisicas.id]
+  id_usuario int [not null, ref: > Usuarios.id, note: "Empleado responsable del turno"]
+  
+  fondo_inicial decimal [not null, default: 0.0]
+  fecha_apertura timestamp [not null]
+  
+  // Nulos mientras el turno siga abierto
+  fecha_cierre timestamp 
+  efectivo_contado_al_cierre decimal [note: "Dato duro (contado físicamente). El descuadre lo calcula el backend"]
+}
+
+// Registro de entradas/salidas manuales de dinero ajenas a las ventas
+Table Movimientos_Efectivo {
+  id int [pk, increment]
+  id_sesion_caja int [not null, ref: > Sesiones_Caja.id]
+  
+  tipo_movimiento varchar [not null, note: "'ingreso' o 'egreso'"]
+  monto decimal [not null]
+  concepto varchar [not null, note: "Ej: 'Pago de proveedor de agua', 'Morralla extra'"]
+  fecha timestamp [not null]
+}
+
+Table Transacciones {
+  id int [pk, increment]
+  id_usuario_consumidor int [ref: > Usuarios.id]
+  
+  // EL ENLACE MÁGICO AL CORTE DE CAJA (Opcional)
+  id_sesion_caja int [ref: > Sesiones_Caja.id, note: "Si es Nulo, fue una transacción digital 24/7 sin caja abierta"]
+  
+  monto_total decimal [not null, note: "Suma de todos los subtotal de la venta"]
+  
+  // ATRIBUTOS FINANCIEROS AUDITABLES
+  metodo_pago varchar [not null, note: "Ej: 'efectivo', 'tarjeta', 'transferencia', 'puntos'"]
+  estado_pago varchar [not null, default: "'completado'", note: "Ej: 'completado', 'pendiente', 'reembolsado'"]
+  
+  fecha_transaccion timestamp [not null]
+}
+
+// Mantenemos su estructura intacta, pero ahora lógicamente pertenece al dominio de Finanzas
+Table Detalle_Transaccion {
+  id int [pk, increment]
+  id_transaccion int [not null, ref: > Transacciones.id]
+  id_servicios_productos_disponibles int [ref: > Servicios_Disponibles.id]
+  cantidad int [not null]
+  subtotal decimal [not null, note: "Cantidad por el costo de servicios_productos"]
 }

@@ -5,8 +5,8 @@ import time
 # Agregamos el directorio actual al path para que Python encuentre la carpeta 'backend'
 sys.path.append(".")
 
-# Importamos las funciones que acabamos de crear en main.py
-from backend.main import crear_base_datos, llenar_base_datos
+# 🌟 ACTUALIZADO: Importamos las funciones desde el nuevo archivo de mantenimiento
+from backend.datosprueba_BD import crear_base_datos, llenar_base_datos
 
 def iniciar_solo_frontend():
     """Inicia únicamente el servidor de Expo."""

@@ -1,37 +1,42 @@
 # Arquitectura del Proyecto: Circle
 
 ## ⚙️ Backend (Python + FastAPI)
-Arquitectura Basada en Dominios. Cada carpeta representa un área de la lógica de negocio, siendo totalmente independiente.
+Arquitectura Basada en Dominios (DDD). Cada carpeta representa un área de la lógica de negocio, siendo totalmente independiente.
 
 ```text
 CIRCLE/
 ├── backend/
-│   ├── core/                 (Configuración global, seguridad y conexión)
-│   │   └── database.py       (Script de conexión a PostgreSQL)
-│   ├── auth/                 (Dominio: Autenticación, JWT, Login)
-│   │   ├── router.py         Este es la puerta de seguridad. Aquí se recibe un correo y contraseña, se va a buscar a la base de datos, se verifica que la 
-│   │   │                          contraseña sea correcta, y si todo está bien, devuelve un "Gafete Virtual" (JWT Token).
-│   │   └── schemas.py
-│   ├── usuarios/             (Dominio: Core del sistema)
-│   │   ├── models.py         (Tablas: Usuarios, Suscripciones)
-│   │   ├── schemas.py        (Validaciones Pydantic)
-│   │   └── router.py         (Endpoints /api/usuarios)
-│   ├── negocios/             (Dominio: Estructura empresarial)
-│   │   ├── models.py         (Tablas: Negocios, Sucursales, Empleados_Sucursal)
-│   │   └── ...
-│   ├── catalogo/             (Soluciones 2, 3 y 4: Inventario y Análisis)
-│   │   ├── models.py         (Tablas: Productos, Servicios, Servicios_Sucursales)
-│   │   └── ...
 │   ├── agenda/               (Dominio: Solución 1 - Agenda e Inteligencia)
-│   │   ├── models.py         (Tablas: Citas, Agenda_Whitelist, Archivos_Citas, CRM, Transacciones, Detalle_Transacciones)
-│   │   └── ...
-│   ├── lealtad/              (Solución 5: Promociones Dinámicas)
-│   │   ├── models.py         (Tablas: Resenas, Ofertas, Ofertas_Reglas, Ofertas_Whitelist, Historial_Uso_Ofertas)
-│   │   └── ...
-│   ├── modulos/              (Dominio: Validadores de límites Gratis vs Premium)
-│   └── main.py               (Punto de entrada y script inicializador de la BD)
+│   │   ├── models.py         (Tablas: Citas, Agenda_Whitelist, Archivos_Citas, CRM)
+│   │   ├── router.py         (Endpoints para gestión de citas y workspace)
+│   │   └── schemas.py        (DTOs de Agenda)
+│   ├── auth/                 (Dominio: Autenticación, Seguridad y JWT)
+│   │   ├── router.py         (Puerta de seguridad: Recibe credenciales, verifica en BD y devuelve un "Gafete Virtual" o JWT Token)
+│   │   └── schemas.py        (DTOs de Login)
+│   ├── catalogo/             (Soluciones 2, 3 y 4: Inventario y Catálogo Unificado)
+│   │   └── models.py         (Tablas: Productos, Servicios, Materiales, Servicios_Sucursales)
+│   ├── core/                 (Configuración global, middlewares y conexión)
+│   │   └── database.py       (Script de conexión a PostgreSQL)
+│   ├── finanzas/             (Dominio: POS, Flujo de Efectivo y Cobros)
+│   │   └── ...               (Futuras Tablas: Transacciones, Detalle_Transaccion, Cajas_Fisicas, Sesiones_Caja, Movimientos_Efectivo)
+│   ├── lealtad/              (Solución 5: Promociones Dinámicas y CRM Social)
+│   │   └── models.py         (Tablas: Resenas, Ofertas, Ofertas_Reglas, Ofertas_Whitelist, Billeteras, Publicaciones, Comentarios)
+│   ├── modulos/              (Dominio: Validadores de límites Gratis vs Premium y App Store Interna)
+│   ├── negocios/             (Dominio: Estructura empresarial)
+│   │   ├── models.py         (Tablas: Negocios, Sucursales, Empleados_Sucursal, Soluciones)
+│   │   ├── router.py         (Endpoints de negocio)
+│   │   └── schemas.py        (DTOs de Negocio)
+│   ├── usuarios/             (Dominio: Identidad y Suscripciones Core)
+│   │   ├── models.py         (Tablas: Usuarios, Suscripciones)
+│   │   ├── router.py         (Endpoints /api/usuarios)
+│   │   └── schemas.py        (Validaciones Pydantic)
+│   ├── venv/                 (Entorno virtual aislado de dependencias Python)
+│   ├── .env                  (Variables de entorno y secretos del sistema)
+│   ├── datosprueba_BD.py     (Script de mantenimiento y semilla para resetear/llenar la BD)
+│   ├── Dependencias.txt      (Listado de requerimientos y librerías del backend)
+│   └── main.py               (Punto de entrada de FastAPI, configuración de CORS y enrutador global)
 
-Frontend (React Native + Expo)
+## 📱 Frontend (React Native + Expo)
 Arquitectura Basada en Funcionalidades (Feature-based). Separamos la navegación visual de la lógica de negocio.
 
 CIRCLE/
@@ -71,7 +76,7 @@ CIRCLE/
 │   │   ├── auth/                 (Lógica estricta de autenticación)
 │   │   │   └── authService.ts    (Funciones para validar tokens y login)
 │   │   └── home/                 (Lógica para cargar los datos del dashboard)
-│   │       ├── homeService.ts    (Conastruyte la petición, Oye, Backend, aquí está mi Token JWT, dime quién soy y de qué negocio soy dueño)
+│   │       ├── homeService.ts    (Construye la petición, Oye, Backend, aquí está mi Token JWT, dime quién soy y de qué negocio soy dueño)
 │   ├── hooks/                    (Hooks personalizados de React, ej. useColorScheme)
 │   ├── store/
 │   │   └── useAuthStore.ts       (Aquí guardaremos tu Token de seguridad y los datos del usuario para que cualquier pantalla pueda acceder a ellos al instante)

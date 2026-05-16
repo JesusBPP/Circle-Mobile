@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, LayoutAnimation, Platform, UIManager, Alert } from 'react-native';
-// 🌟 IMPORTAMOS useFocusEffect PARA RECARGAR DATOS AL VOLVER A LA PANTALLA
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -8,6 +7,9 @@ import { FondoManager } from '../../../ui/Fondo';
 import { Calendario } from '../../../components/Agenda/Calendario';
 import { EventoCard } from '../../../components/Agenda/EventoCard';
 import { CrearCita } from '../../../components/Agenda/CrearCita'; 
+// 🌟 IMPORTAMOS LOS COMPONENTES DEL WORKSPACE DIRECTO AQUÍ
+import { WorkSpace } from '../../../components/Agenda/WorkSpace';
+import { InfoConsumidor } from '../../../components/Agenda/InfoConsumidor';
 
 import { useAuthStore } from '../../../store/useAuthStore';
 import { agendaService } from '../../../features/agenda/agendaService';
@@ -22,52 +24,87 @@ export default function AgendaIndex() {
   
   const [filtroTiempo, setFiltroTiempo] = useState<'Hoy' | 'Semana' | 'Mes'>('Hoy');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
   const [fechaSeleccionada, setFechaSeleccionada] = useState<Date>(new Date());
 
   const [citasRaw, setCitasRaw] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  // 🌟 CAMBIO CLAVE: Cambiamos useEffect por useFocusEffect.
-  // Esto hace que cada vez que regreses a esta pantalla, haga el Fetch de nuevo y actualice los colores/horas.
-  useFocusEffect(
-    useCallback(() => {
-      const fetchCitas = async () => {
-        if (negocioId) {
-          try {
-            const data = await agendaService.obtenerCitas(negocioId);
-            setCitasRaw(data);
-          } catch (error) {
-            console.error("Error al cargar la agenda:", error);
-          } finally {
-            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-            setIsLoading(false);
-          }
-        }
-      };
-      fetchCitas();
-    }, [negocioId])
-  );
+  // ==========================================
+  // 🌟 ESTADOS PARA EL RENDERIZADO DEL WORKSPACE
+  // ==========================================
+  const [citaSeleccionadaId, setCitaSeleccionadaId] = useState<number | null>(null);
+  const [consumidorSeleccionado, setConsumidorSeleccionado] = useState<any>(null);
+  const [isInfoVisible, setIsInfoVisible] = useState(false);
+
+  // Extraemos el fetch para poder llamarlo después de reprogramar/editar
+  const fetchCitas = async () => {
+    if (!negocioId) return;
+    try {
+      const data = await agendaService.obtenerCitas(negocioId);
+      setCitasRaw(data);
+    } catch (error) {
+      console.error("Error al cargar la agenda:", error);
+    } finally {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setIsLoading(false);
+    }
+  };
+
+  useFocusEffect(useCallback(() => { fetchCitas(); }, [negocioId]));
 
   const handleGuardarCita = async (nuevaCita: any) => {
     if (!negocioId) return;
-
     try {
       const citaConSucursal = { ...nuevaCita, id_sucursal: 1 };
       const citaGuardada = await agendaService.crearCita(negocioId, citaConSucursal);
-      
       setCitasRaw(prev => [...prev, citaGuardada]);
       setIsModalVisible(false);
       Alert.alert("Éxito", "Actividad agendada correctamente.");
-
     } catch (error: any) {
-      console.error(error);
       Alert.alert("Error", error.message);
     }
   };
 
+  // ==========================================
+  // 🌟 FUNCIONES DEL WORKSPACE Y CRM
+  // ==========================================
+  const handleGuardarEdicionWorkspace = async (nuevosDatos: any) => {
+    if (!citaSeleccionadaId) return;
+    try {
+      await agendaService.actualizarCita(citaSeleccionadaId, nuevosDatos);
+      await fetchCitas(); // Recargamos para que la lista refleje el cambio
+      Alert.alert("Éxito", "Cambios guardados correctamente.");
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
+  const handleVincularConsumidor = async (usuario: any) => {
+    if (!citaSeleccionadaId) return;
+    try {
+      await agendaService.vincularConsumidor(citaSeleccionadaId, usuario.id);
+      await fetchCitas();
+      Alert.alert("Éxito", `${usuario.nombre} vinculado a la actividad.`);
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    }
+  };
+
+  const handleAbrirInfoConsumidor = async (consumidor: any) => {
+    if (!negocioId) return;
+    try {
+      const perfilCompleto = await agendaService.obtenerHistorialConsumidor(negocioId, consumidor.id);
+      setConsumidorSeleccionado(perfilCompleto);
+      setIsInfoVisible(true);
+    } catch (error: any) {
+      Alert.alert("Error", "No se pudo cargar el historial del cliente.");
+    }
+  };
+
+  // ==========================================
+  // FORMATEO DE DATOS
+  // ==========================================
   const formatHora = (isoString: string) => {
     const date = new Date(isoString);
     let hours = date.getHours();
@@ -87,18 +124,24 @@ export default function AgendaIndex() {
       id: cita.id,
       tipo: cita.tipo, 
       titulo: cita.titulo || "Actividad Agendada",
-      descripcion: cita.descripcion || 'Sin descripción',
+      descripcion: cita.descripcion || '',
       horaInicio: formatHora(cita.fecha_hora_inicio),
       horaFin: formatHora(cita.fecha_hora_fin),
       cliente: cita.cliente, 
       estado: cita.estado,
       fechaReal: new Date(cita.fecha_hora_inicio), 
-      fechaCard: formatFechaParaCard(cita.fecha_hora_inicio)
+      fechaCard: formatFechaParaCard(cita.fecha_hora_inicio),
+      // Añadidos extra para que el Workspace los lea directamente
+      fecha_hora_inicio_raw: cita.fecha_hora_inicio,
+      fecha_hora_fin_raw: cita.fecha_hora_fin,
+      notas_internas: cita.notas_internas || '',
+      consumidores_vinculados: cita.consumidores_vinculados || []
     };
   };
 
   const citasMapeadas = citasRaw.map(mapCitaToCard);
   
+  // 🌟 LÓGICA DE FILTRADO CORREGIDA
   const citasFiltradasAgenda = citasMapeadas.filter((cita) => {
     const hoy = new Date();
     const f = cita.fechaReal;
@@ -107,8 +150,16 @@ export default function AgendaIndex() {
       return f.getDate() === hoy.getDate() && f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear();
     }
     if (filtroTiempo === 'Semana') {
-      const en7Dias = new Date(hoy.getTime() + 7 * 24 * 60 * 60 * 1000);
-      return f >= hoy && f <= en7Dias;
+      // 🌟 CORRECCIÓN: Filtramos desde el Domingo pasado hasta el próximo Sábado
+      const inicioSemana = new Date(hoy);
+      inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+      inicioSemana.setHours(0, 0, 0, 0);
+
+      const finSemana = new Date(inicioSemana);
+      finSemana.setDate(inicioSemana.getDate() + 6);
+      finSemana.setHours(23, 59, 59, 999);
+
+      return f >= inicioSemana && f <= finSemana;
     }
     if (filtroTiempo === 'Mes') {
       return f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear();
@@ -125,6 +176,63 @@ export default function AgendaIndex() {
 
   const hoyStr = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
 
+  // =======================================================
+  // 🌟 RENDERIZADO CONDICIONAL (MASTER-DETAIL)
+  // Si hay una cita seleccionada, mostramos el WORKSPACE
+  // =======================================================
+  if (citaSeleccionadaId) {
+    const citaWorkspace = citasMapeadas.find(c => c.id === citaSeleccionadaId);
+    
+    if (citaWorkspace) {
+      const esFinalizada = citaWorkspace.estado === 'Finalizada';
+      const esCancelada = citaWorkspace.estado === 'Cancelada';
+      let colorPrincipal = citaWorkspace.tipo === 'cita' ? 'rgb(15, 82, 186)' : 'rgb(34, 139, 34)';
+      if (esCancelada) colorPrincipal = 'rgb(200, 70, 70)'; 
+      else if (esFinalizada) colorPrincipal = 'rgb(212, 175, 55)';
+
+      return (
+        <FondoManager tipoFondo="pattern-light">
+          <View style={styles.container}>
+            <View style={styles.headerWorkspace}>
+              <TouchableOpacity onPress={() => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setCitaSeleccionadaId(null);
+              }} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color="#1e293b" />
+              </TouchableOpacity>
+              <View style={styles.headerTitleContainer}>
+                <Text style={styles.headerTitle}>Workspace</Text>
+                <Text style={[styles.headerSubtitle, { color: colorPrincipal }]}>{citaWorkspace.fechaCard.toUpperCase()}</Text>
+              </View>
+              <TouchableOpacity style={styles.optionsButton}>
+                <Ionicons name="ellipsis-vertical" size={20} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={[styles.topColorBand, { backgroundColor: colorPrincipal }]} />
+
+            <WorkSpace 
+              negocioId={negocioId as number} 
+              citaMock={citaWorkspace} 
+              onGuardarEdicion={handleGuardarEdicionWorkspace} 
+              onVincularConsumidor={handleVincularConsumidor} 
+              onConsumerClick={handleAbrirInfoConsumidor} 
+            />
+
+            <InfoConsumidor 
+              visible={isInfoVisible} 
+              consumidor={consumidorSeleccionado} 
+              onClose={() => setIsInfoVisible(false)} 
+            />
+          </View>
+        </FondoManager>
+      );
+    }
+  }
+
+  // =======================================================
+  // 🌟 RENDERIZADO NORMAL (LISTA DE AGENDA)
+  // =======================================================
   return (
     <FondoManager tipoFondo="pattern-light">
       <View style={styles.container}>
@@ -175,7 +283,10 @@ export default function AgendaIndex() {
                     key={cita.id} 
                     {...cita} 
                     fechaSimple={cita.fechaCard} 
-                    onPress={() => router.push(`/(screens)/agenda/EspacioAgenda?id_cita=${cita.id}` as any)}
+                    onPress={() => {
+                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                      setCitaSeleccionadaId(cita.id);
+                    }}
                   />
                 ))
               ) : (
@@ -229,7 +340,10 @@ export default function AgendaIndex() {
                     key={cita.id} 
                     {...cita} 
                     fechaSimple={cita.fechaCard} 
-                    onPress={() => router.push(`/(screens)/agenda/EspacioAgenda?id_cita=${cita.id}` as any)}
+                    onPress={() => {
+                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                      setCitaSeleccionadaId(cita.id);
+                    }}
                   />
                 ))
               ) : (
@@ -256,6 +370,15 @@ export default function AgendaIndex() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 15, backgroundColor: 'rgba(255, 255, 255, 0.8)' },
+  
+  // 🌟 ESTILOS DEL HEADER DEL WORKSPACE MIGRADOS
+  headerWorkspace: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 15, backgroundColor: '#ffffff', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5, zIndex: 10 },
+  headerTitleContainer: { alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: '#1e293b' },
+  headerSubtitle: { fontSize: 11, fontWeight: '800', marginTop: 2 },
+  optionsButton: { padding: 8, borderRadius: 12, backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0' },
+  topColorBand: { width: '100%', height: 4 },
+
   backButton: { padding: 8, borderRadius: 12, backgroundColor: '#f1f5f9' },
   tabsContainer: { flexDirection: 'row', backgroundColor: '#e2e8f0', borderRadius: 12, padding: 4 },
   tabButton: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 10 },
