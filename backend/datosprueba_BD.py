@@ -8,6 +8,7 @@ from backend.negocios import models as negocios_models
 from backend.agenda import models as agenda_models
 from backend.catalogo import models as catalogo_models
 from backend.lealtad import models as lealtad_models
+from backend.finanzas import models as finanzas_models # 🌟 NUEVO DOMINIO IMPORTADO
 
 def crear_base_datos():
     print("🧹 Borrando base de datos anterior (Forzando limpieza en cascada)...")
@@ -55,8 +56,20 @@ def llenar_base_datos():
         db.add_all([sucursal_cafe, sucursal_barber])
         db.commit()
 
+        print("🤝 Asignando empleados...")
         es1 = negocios_models.EmpleadoSucursal(id_usuario=emp1.id, id_sucursal=sucursal_cafe.id, estado_invitacion="aceptada", permisos="solo_operacion")
         db.add(es1)
+        db.commit()
+
+        print("🛠️ Creando Catálogo de Soluciones (App Store interna)...")
+        solucion_agenda = negocios_models.Solucion(nombre="Agenda", descripcion="Gestión de citas", ruta_frontend="/agenda", es_premium_exclusiva=False, activa_en_catalogo=True)
+        solucion_lealtad = negocios_models.Solucion(nombre="Lealtad", descripcion="Puntos y ofertas", ruta_frontend="/lealtad", es_premium_exclusiva=False, activa_en_catalogo=True)
+        db.add_all([solucion_agenda, solucion_lealtad])
+        db.commit()
+
+        print("📲 Instalando Soluciones...")
+        instalacion_agenda = negocios_models.NegocioSolucion(id_negocio=negocio1.id, id_solucion=solucion_agenda.id, esta_activa=True)
+        db.add(instalacion_agenda)
         db.commit()
 
         print("📦 Creando Catálogo Unificado y Disponibilidad...")
@@ -64,8 +77,11 @@ def llenar_base_datos():
         prod_capuchino = catalogo_models.ServicioProducto(nombre="Capuchino Grande", costo=65.00, tipo_producto="producto")
         serv_reserva = catalogo_models.ServicioProducto(nombre="Reserva Mesa VIP", costo=100.00, tipo_producto="servicio")
         serv_corte = catalogo_models.ServicioProducto(nombre="Corte de Cabello", costo=250.00, tipo_producto="servicio")
-        
         db.add_all([mat_cafe, prod_capuchino, serv_reserva, serv_corte])
+        db.commit()
+        
+        receta_cap = catalogo_models.ProcesoServicioProducto(id_servicio_producto=prod_capuchino.id, id_material=mat_cafe.id, cantidad=0.02)
+        db.add(receta_cap)
         db.commit()
 
         disp_cafe = catalogo_models.ServicioDisponible(id_servicio_producto=prod_capuchino.id, id_sucursal=sucursal_cafe.id)
@@ -74,18 +90,41 @@ def llenar_base_datos():
         db.add_all([disp_cafe, disp_reserva, disp_corte])
         db.commit()
 
-        print("💳 Simulando Cajas: Transacciones y Detalles...")
-        transaccion1 = catalogo_models.Transaccion(id_usuario_consumidor=cons1.id, monto_total=165.00, fecha_transaccion=datetime.utcnow())
+        # ========================================================
+        # 🌟 NUEVO: INYECCIÓN DE DATOS DE FINANZAS / CAJAS
+        # ========================================================
+        print("🏦 Abriendo Cajas y Sesiones de Turno...")
+        caja_principal = finanzas_models.CajaFisica(id_sucursal=sucursal_cafe.id, nombre="Caja Mostrador 1", esta_activa=True)
+        db.add(caja_principal)
+        db.commit()
+
+        sesion_juan = finanzas_models.SesionCaja(id_caja_fisica=caja_principal.id, id_usuario=emp1.id, fondo_inicial=500.00, fecha_apertura=datetime.utcnow())
+        db.add(sesion_juan)
+        db.commit()
+
+        mov_ingreso = finanzas_models.MovimientoEfectivo(id_sesion_caja=sesion_juan.id, tipo_movimiento="ingreso", monto=100.00, concepto="Sencillo para cambio")
+        db.add(mov_ingreso)
+        db.commit()
+
+        print("💳 Simulando Transacciones y Detalles...")
+        # 🌟 Actualizado para usar finanzas_models
+        transaccion1 = finanzas_models.Transaccion(id_usuario_consumidor=cons1.id, id_sesion_caja=sesion_juan.id, monto_total=165.00, metodo_pago="efectivo", estado_pago="completado", fecha_transaccion=datetime.utcnow())
         db.add(transaccion1)
         db.commit()
-        detalle1 = catalogo_models.DetalleTransaccion(id_transaccion=transaccion1.id, id_servicios_productos_disponibles=disp_cafe.id, cantidad=1, subtotal=65.00)
-        detalle2 = catalogo_models.DetalleTransaccion(id_transaccion=transaccion1.id, id_servicios_productos_disponibles=disp_reserva.id, cantidad=1, subtotal=100.00)
+        
+        detalle1 = finanzas_models.DetalleTransaccion(id_transaccion=transaccion1.id, id_servicios_productos_disponibles=disp_cafe.id, cantidad=1, subtotal=65.00)
+        detalle2 = finanzas_models.DetalleTransaccion(id_transaccion=transaccion1.id, id_servicios_productos_disponibles=disp_reserva.id, cantidad=1, subtotal=100.00)
         db.add_all([detalle1, detalle2])
         db.commit()
 
-        print("📅 Creando Citas (Con Archivos y Vinculaciones CRM)...")
+        print("📅 Creando Citas y Agenda Whitelist...")
         hoy = datetime.utcnow()
-        cita_carlos = agenda_models.Cita(id_sucursal=sucursal_cafe.id, titulo="Reserva Mesa 4", fecha_hora_inicio=hoy + timedelta(days=2), fecha_hora_fin=hoy + timedelta(days=2, hours=1), numero_bloques=2, estado="Programada")
+        
+        whitelist_cons1 = agenda_models.AgendaWhitelist(id_sucursales=sucursal_cafe.id, id_usuario_consumidor=cons1.id)
+        db.add(whitelist_cons1)
+        db.commit()
+
+        cita_carlos = agenda_models.Cita(id_sucursal=sucursal_cafe.id, titulo="Reserva Mesa 4", fecha_hora_inicio=hoy + timedelta(days=2), fecha_hora_fin=hoy + timedelta(days=2, hours=1), numero_bloques=2, estado="programada")
         db.add(cita_carlos)
         db.commit()
         
@@ -106,11 +145,11 @@ def llenar_base_datos():
         db.add_all([config_lealtad, cartera_juan])
         db.commit()
         
-        movimiento = lealtad_models.HistorialMovimientoLealtad(id_cartera=cartera_juan.id, id_transaccion=transaccion1.id, tipo_movimiento="acumulacion", monto_puntos=165.00, monto_sellos=1, descripcion="Acumulación por compra de Reserva y Capuchino")
+        movimiento = lealtad_models.HistorialMovimientoLealtad(id_cartera=cartera_juan.id, id_transaccion=transaccion1.id, tipo_movimiento="acumulacion", monto_puntos=165.00, monto_sellos=1, descripcion="Acumulación por compra")
         db.add(movimiento)
         db.commit()
 
-        print("🎁 Creando Reglas N x N (Ofertas)...")
+        print("🎁 Creando Reglas N x N y Canjes...")
         oferta_vip = lealtad_models.Oferta(id_sucursales=sucursal_cafe.id, titulo="50% Off en Capuchino con tu Reserva", descripcion="Promo exclusiva", es_publica=False)
         db.add(oferta_vip)
         db.commit()
@@ -123,35 +162,22 @@ def llenar_base_datos():
         db.add(lealtad_models.OfertaWhitelist(id_oferta=oferta_vip.id, id_usuario_consumidor=cons1.id))
         db.commit()
 
+        # 🌟 NUEVO: Simulando que el usuario ya usó un QR
+        uso_qr = lealtad_models.HistorialUsoOferta(id_oferta=oferta_vip.id, id_usuario_consumidor=cons1.id, id_transaccion=transaccion1.id, fecha_uso=datetime.utcnow())
+        db.add(uso_qr)
+        db.commit()
+
         print("📱 Creando Feed de Publicaciones del Negocio...")
-        
-        pub_aviso = lealtad_models.Publicacion(
-            id_negocio=negocio1.id,
-            titulo="¡Cerramos el 25 de Diciembre!",
-            descripcion="Aviso a nuestros clientes: El día 25 descansamos. Nos vemos el 26 con la mejor actitud.",
-            habilitar_comentarios=False
-        )
-
-        pub_oferta = lealtad_models.Publicacion(
-            id_negocio=negocio1.id,
-            id_oferta=oferta_vip.id,
-            titulo="Promoción VIP Secreta",
-            descripcion="Porque eres un cliente frecuente, si reservas hoy una mesa, te damos tu capuchino al 50%. ¡Dale click al botón para canjear!",
-            habilitar_comentarios=True
-        )
-
+        pub_aviso = lealtad_models.Publicacion(id_negocio=negocio1.id, titulo="Cerramos hoy", descripcion="Aviso.", habilitar_comentarios=False)
+        pub_oferta = lealtad_models.Publicacion(id_negocio=negocio1.id, id_oferta=oferta_vip.id, titulo="Promo VIP", descripcion="Descuento", habilitar_comentarios=True)
         db.add_all([pub_aviso, pub_oferta])
         db.commit()
 
-        comentario_juan = lealtad_models.ComentarioPublicacion(
-            id_publicacion=pub_oferta.id,
-            id_usuario_consumidor=cons1.id,
-            texto_comentario="¡Excelente promo! Iré el viernes."
-        )
+        comentario_juan = lealtad_models.ComentarioPublicacion(id_publicacion=pub_oferta.id, id_usuario_consumidor=cons1.id, texto_comentario="¡Excelente promo!")
         db.add(comentario_juan)
         db.commit()
 
-        print("✅ ¡Base de datos V2.1 llenada con éxito!")
+        print("✅ ¡Base de datos rellenada al 100% en todos sus dominios!")
 
     except Exception as e:
         print(f"❌ Ocurrió un error al llenar la base de datos: {e}")

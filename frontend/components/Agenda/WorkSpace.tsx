@@ -2,21 +2,24 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-// 🌟 IMPORTAMOS EL COMPONENTE
 import { BuscadorUsuarios } from '../../ui/BuscadorUsuarios';
 
 interface WorkSpaceProps {
-  negocioId: number; // 🌟 Necesario para buscar
+  negocioId: number; 
   citaMock: any; 
   onGuardarEdicion?: (nuevosDatos: any) => void;
-  onVincularConsumidor?: (usuario: any) => void; // 🌟 Para vincular en vivo
+  onVincularConsumidor?: (usuario: any) => void; 
   onConsumerClick?: (consumidor: any) => void;
 }
 
 export const WorkSpace = ({ negocioId, citaMock, onGuardarEdicion, onVincularConsumidor, onConsumerClick }: WorkSpaceProps) => {
+  // 🌟 NORMALIZACIÓN DE ESTADO (A PRUEBA DE MAYÚSCULAS/MINÚSCULAS)
+  const estadoRaw = citaMock.estado || 'Programada';
+  const estadoNormalizado = estadoRaw.charAt(0).toUpperCase() + estadoRaw.slice(1).toLowerCase();
+
   const esCita = citaMock.tipo === 'cita';
-  const esCancelada = citaMock.estado === 'Cancelada';
-  const esFinalizada = citaMock.estado === 'Finalizada';
+  const esCancelada = estadoNormalizado === 'Cancelada';
+  const esFinalizada = estadoNormalizado === 'Finalizada';
 
   let colorPrincipal = esCita ? 'rgb(15, 82, 186)' : 'rgb(34, 139, 34)';
   if (esFinalizada) colorPrincipal = 'rgb(212, 175, 55)';
@@ -46,13 +49,16 @@ export const WorkSpace = ({ negocioId, citaMock, onGuardarEdicion, onVincularCon
     }
   };
 
+  // 🌟 AHORA EL DICCIONARIO FUNCIONARÁ SIEMPRE
   const transicionesValidas: Record<string, string[]> = {
     'Programada': ['Reprogramada', 'Finalizada', 'Cancelada'],
     'Reprogramada': ['Reprogramada', 'Finalizada', 'Cancelada'],
     'Pendiente': ['Programada', 'Finalizada', 'Cancelada'],
-    'Finalizada': [], 'Cancelada': []   
+    'Finalizada': [], 
+    'Cancelada': []   
   };
-  const estadosPermitidos = transicionesValidas[citaMock.estado] || [];
+  
+  const estadosPermitidos = transicionesValidas[estadoNormalizado] || [];
 
   const handleCambioEstado = (nuevoEstado: string) => {
     if (nuevoEstado === 'Reprogramada') {
@@ -105,7 +111,8 @@ export const WorkSpace = ({ negocioId, citaMock, onGuardarEdicion, onVincularCon
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Estado Actual:</Text>
-          <Text style={[styles.infoValue, { fontWeight: 'bold', color: colorPrincipal }]}>{citaMock.estado}</Text>
+          {/* 🌟 MOSTRAMOS EL ESTADO NORMALIZADO PARA QUE SE VEA ESTÉTICO */}
+          <Text style={[styles.infoValue, { fontWeight: 'bold', color: colorPrincipal }]}>{estadoNormalizado}</Text>
         </View>
 
         {!isReprogramming && estadosPermitidos.length > 0 && (
@@ -195,7 +202,6 @@ export const WorkSpace = ({ negocioId, citaMock, onGuardarEdicion, onVincularCon
           <Text style={styles.cardTitle}>Consumidores (CRM)</Text>
         </View>
 
-        {/* 🌟 AQUÍ USAMOS TU COMPONENTE REUTILIZABLE */}
         <BuscadorUsuarios 
           negocioId={negocioId} 
           onSelect={(usr) => onVincularConsumidor && onVincularConsumidor(usr)} 

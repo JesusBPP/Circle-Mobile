@@ -2,6 +2,7 @@ pip install fastapi uvicorn sqlalchemy psycopg2-binary
 pip install "pydantic[email]"
 pip install Pillow
 pip install python-dotenv
+pip install python-jose[cryptography]
 
 
 **************************
@@ -16,3 +17,9 @@ npx expo install @expo/vector-icons
 npm install zustand
 
 npx expo install @react-native-community/datetimepicker
+
+# 1. Instalar la librería base de Vectores SVG requerida por Expo
+npx expo install react-native-svg
+
+# 2. Instalar el motor renderizador de códigos QR
+npm install react-native-qrcode-svg

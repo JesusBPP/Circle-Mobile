@@ -18,7 +18,7 @@ CIRCLE/
 │   ├── core/                 (Configuración global, middlewares y conexión)
 │   │   └── database.py       (Script de conexión a PostgreSQL)
 │   ├── finanzas/             (Dominio: POS, Flujo de Efectivo y Cobros)
-│   │   └── ...               (Futuras Tablas: Transacciones, Detalle_Transaccion, Cajas_Fisicas, Sesiones_Caja, Movimientos_Efectivo)
+│   │   └── models.py         (Tablas: Transacciones, Detalle_Transaccion, Cajas_Fisicas, Sesiones_Caja, Movimientos_Efectivo)
 │   ├── lealtad/              (Solución 5: Promociones Dinámicas y CRM Social)
 │   │   └── models.py         (Tablas: Resenas, Ofertas, Ofertas_Reglas, Ofertas_Whitelist, Billeteras, Publicaciones, Comentarios)
 │   ├── modulos/              (Dominio: Validadores de límites Gratis vs Premium y App Store Interna)
@@ -39,7 +39,7 @@ CIRCLE/
 ## 📱 Frontend (React Native + Expo)
 Arquitectura Basada en Funcionalidades (Feature-based). Separamos la navegación visual de la lógica de negocio.
 
-CIRCLE/
+CIRCLE-MOBILE/
 ├── frontend/
 │   ├── .expo/                    (Archivos autogenerados por Expo, no tocar)
 │   ├── .vscode/                  (Configuraciones de tu editor de código)
@@ -49,43 +49,86 @@ CIRCLE/
 │   │   └── apiClient.ts          (Configuración de Axios/Fetch hacia FastAPI)
 │   ├── app/                      (SISTEMA DE NAVEGACIÓN - Expo Router)
 │   │   ├── (auth)/               (Grupo de pantallas públicas)
-│   │   │   ├── _layout.tsx       (Reglas de navegación antes del login)
-│   │   │   └── login.tsx         (Pantalla visual de Login)
-│   │   ├── (screens)/            (Grupo de pantallas específicas)
-│   │   │   └── menuSoluciones.tsx (Pantalla menú donde podrán elegir de entre todas las soluciones)
+│   │   │   ├── _layout.tsx       
+│   │   │   └── login.tsx         
+│   │   ├── (screens)/            (Grupo de pantallas de soluciones específicas)
+│   │   │   ├── agenda/           
+│   │   │   │   └── index.tsx     
+│   │   │   └── lealtad/          
+│   │   │       ├── index.tsx     
+│   │   │       └── menuSoluciones.tsx 
 │   │   ├── (tabs)/               (Grupo de pantallas privadas con barra inferior)
-│   │   │   ├── _layout.tsx       (Configuración de la barra inferior / Bottom Tabs)
-│   │   │   ├── config.tsx        (Pantalla  privada para la configuración del perfil)
-│   │   │   └── home.tsx          (El "Hub" que redirigirá según el tipo de usuario)
-│   │   ├── _layout.tsx           (Enrutador maestro de toda la app)
-│   │   ├── index.tsx             (Punto de entrada inicial, suele redirigir al login)
-│   │   ├── sandbox.tsx           (Tu patio de pruebas de la biblioteca UI)
-│   │   └── vistaUnUI.tsx         (Pantalla para probar elementos UI y el entorno global)
-│   ├── assets/                   (Imágenes, fuentes estáticas locales)
-│   ├── components/               (COMPONENTES COMPUESTOS - Formularios, Dashboards, Tarjetas)
+│   │   │   ├── _layout.tsx       
+│   │   │   ├── config.tsx        
+│   │   │   ├── home.tsx          
+│   │   │   ├── _layout.tsx       (Nota: Enrutador maestro)
+│   │   │   ├── index.tsx         
+│   │   │   ├── sandbox.tsx       
+│   │   │   └── vistaUnUI.tsx     
+│   ├── assets/                   
+│   │   └── images/               (Imágenes estáticas locales)
+│   ├── components/               (COMPONENTES COMPUESTOS)
+│   │   ├── Agenda/
+│   │   │   ├── Calendario.tsx
+│   │   │   ├── CrearCita.tsx
+│   │   │   ├── EventoCard.tsx
+│   │   │   ├── InfoConsumidor.tsx
+│   │   │   └── WorkSpace.tsx
+│   │   ├── Catalogo/
+│   │   │   └── BannerTemp.tsx
 │   │   ├── Config/
-│   │   │   ├── configNegocio.tsx
-│   │   │   └── configAdmin.tsx 
-│   │   └── Home/                 (Componentes para las páginas Home)
-│   │       ├── homeNegocio.tsx   (Componente para la pantalla de home del negocio)
-│   │       ├── homeAdmin.tsx     (Componente para la pantalla de home del admin)
-│   │       └── homeConsumidor.tsx (Componente para la pantalla de home del usuario consumidor)
-│   ├── constants/                (Variables globales)
-│   │   └── theme.ts              (Paleta de colores general si decides extraerla)
-│   ├── features/                 (LÓGICA DE NEGOCIO - Redux, Zustand, Servicios puros)
-│   │   ├── auth/                 (Lógica estricta de autenticación)
-│   │   │   └── authService.ts    (Funciones para validar tokens y login)
-│   │   └── home/                 (Lógica para cargar los datos del dashboard)
-│   │       ├── homeService.ts    (Construye la petición, Oye, Backend, aquí está mi Token JWT, dime quién soy y de qué negocio soy dueño)
-│   ├── hooks/                    (Hooks personalizados de React, ej. useColorScheme)
-│   ├── store/
-│   │   └── useAuthStore.ts       (Aquí guardaremos tu Token de seguridad y los datos del usuario para que cualquier pantalla pueda acceder a ellos al instante)
-│   ├── ui/                       (BIBLIOTECA DE DISEÑO BASE - Tus átomos)
-│   │   ├── Button/               (Botones Neomórficos, CleanUI, etc.)
-│   │   ├── BottomTabs/           (Barra inferior de navegación)
-│   │   ├── DropdownButton/       (Acordeones)
-│   │   ├── Fondo/                (Fondos animados: Tech, Default, Dark)
-│   │   ├── Input/                (Entradas de texto genéricas)
-│   │   ├── RadialMenu/           (Tus menús circulares interactivos)
-│   │   └── Icons.tsx             (Biblioteca central de vectores de Expo)
-│   └── (Archivos de config)      (app.json, package.json, tsconfig.json, etc.)
+│   │   │   ├── configAdmin.tsx
+│   │   │   └── configNegocio.tsx
+│   │   └── Home/                 
+│   │       ├── homeAdmin.tsx   
+│   │       ├── homeConsumidor.tsx 
+│   │       └── homeNegocio.tsx 
+│   ├── constants/                
+│   │   └── theme.ts              
+│   ├── features/                 (LÓGICA DE NEGOCIO Y PETICIONES HTTP Puras)
+│   │   ├── agenda/               
+│   │   │   └── agendaService.ts  
+│   │   ├── auth/                 
+│   │   │   └── authService.ts    
+│   │   ├── home/                 
+│   │   │   └── homeService.ts    
+│   │   └── soluciones/           
+│   │       └── solucionesService.ts
+│   ├── hooks/                    (Hooks personalizados de React)
+│   │   ├── use-color-scheme.ts
+│   │   ├── use-color-scheme.web.ts
+│   │   └── use-theme-color.ts
+│   ├── node_modules/             (Dependencias de Node instaladas)
+│   ├── scripts/                  
+│   │   └── reset-project.js
+│   ├── store/                    (ESTADO GLOBAL)
+│   │   └── useAuthStore.ts       
+│   ├── ui/                       (BIBLIOTECA DE DISEÑO BASE - Átomos)
+│   │   ├── BottomTabs/           
+│   │   │   ├── index.tsx
+│   │   │   └── styles.ts
+│   │   ├── Button/               
+│   │   │   ├── index.tsx
+│   │   │   └── styles.ts
+│   │   ├── DropdownButton/       
+│   │   │   ├── index.tsx
+│   │   │   └── styles.ts
+│   │   ├── Fondo/                
+│   │   │   ├── index.tsx
+│   │   │   └── styles.ts
+│   │   ├── Input/                
+│   │   │   └── index.tsx
+│   │   └── RadialMenu/           
+│   │       ├── index.tsx
+│   │       ├── styles.ts
+│   │       ├── BuscadorUsuarios.tsx
+│   │       └── Icons.tsx
+│   ├── .gitignore                (Reglas de exclusión de Git)
+│   ├── app.json                  (Configuración maestra de Expo)
+│   ├── eslint.config.js          (Reglas de linteo de código)
+│   ├── expo-env.d.ts             (Declaraciones de tipos de entorno de Expo)
+│   ├── index.ts                  (Entrypoint de la aplicación)
+│   ├── package-lock.json         (Árbol de dependencias bloqueado)
+│   ├── package.json              (Definición de scripts y librerías)
+│   ├── README.md                 (Documentación del repositorio)
+│   └── tsconfig.json             (Configuración estricta de TypeScript)

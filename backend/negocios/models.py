@@ -1,10 +1,28 @@
+"""
+===============================================================================
+DOMINIO: NEGOCIOS (Estructura y App Store)
+===============================================================================
+Descripción: 
+Este archivo contiene el modelado de la base de datos para la gestión 
+empresarial, ubicaciones físicas, control de empleados y la tienda de 
+soluciones (App Store interna del ecosistema).
+
+Tablas exactas contenidas en este archivo:
+1. negocios
+2. sucursales
+3. empleados_sucursal
+4. soluciones
+5. negocios_soluciones
+===============================================================================
+"""
+
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Numeric, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from backend.core.database import Base
 
 # ==========================================
-# 2. CORE: NEGOCIOS, SUCURSALES Y EMPLEADOS
+# CORE: NEGOCIOS, SUCURSALES Y EMPLEADOS
 # ==========================================
 
 class Negocio(Base):
@@ -27,7 +45,7 @@ class Negocio(Base):
     configuracion_lealtad = relationship("ConfiguracionLealtad", back_populates="negocio", uselist=False)
     carteras_lealtad = relationship("CarteraLealtad", back_populates="negocio")
     
-    # 🌟 NUEVO: Conexión con las soluciones instaladas (App Store interna)
+    # Conexión con las soluciones instaladas (App Store interna)
     soluciones_instaladas = relationship("NegocioSolucion", back_populates="negocio")
 
 
@@ -77,7 +95,7 @@ class EmpleadoSucursal(Base):
 
 
 # ==========================================
-# 🌟 8. NUEVO MÓDULO: ECOSISTEMA Y SOLUCIONES
+# ECOSISTEMA Y SOLUCIONES (App Store)
 # ==========================================
 
 class Solucion(Base):
@@ -107,7 +125,7 @@ class NegocioSolucion(Base):
     fecha_instalacion = Column(DateTime, default=datetime.utcnow, nullable=False)
     esta_activa = Column(Boolean, default=True, nullable=False)
 
-    # 🌟 Restricción para no instalar la misma solución dos veces en el mismo negocio
+    # Restricción para no instalar la misma solución dos veces en el mismo negocio
     __table_args__ = (
         UniqueConstraint('id_negocio', 'id_solucion', name='idx_negocio_solucion_unica'),
     )
@@ -115,3 +133,22 @@ class NegocioSolucion(Base):
     # Relaciones inversas
     negocio = relationship("Negocio", back_populates="soluciones_instaladas")
     solucion = relationship("Solucion", back_populates="negocios_instalados")
+
+"""
+===============================================================================
+CONTEXTO ARQUITECTÓNICO (¿Por qué estas tablas están aquí?):
+-------------------------------------------------------------------------------
+El dominio de 'Negocios' es el eje estructural (la columna vertebral) sobre el 
+que operan los demás módulos operativos del ecosistema Circle.
+
+- Separa la entidad 'Usuario' de la entidad 'Negocio'. Un usuario del sistema 
+  solo adquiere el rol y privilegios de "Dueño" cuando su ID se registra aquí.
+- Las 'sucursales' se gestionan aquí porque representan los espacios físicos. Son 
+  el ancla territorial donde ocurren la 'Agenda', el 'Catálogo' y las 'Finanzas', 
+  actuando también como frontera de acceso para los 'empleados_sucursal'.
+- Las tablas 'soluciones' y 'negocios_soluciones' actúan como el App Store interna 
+  de Circle. Dictaminan qué herramientas modulares tiene encendidas el negocio,
+  habilitando que la plataforma funcione como un verdadero SaaS modular y no 
+  como un monolito rígido.
+===============================================================================
+""" 
