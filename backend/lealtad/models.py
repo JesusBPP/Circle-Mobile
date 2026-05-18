@@ -61,6 +61,9 @@ class Oferta(Base):
     
     es_publica = Column(Boolean, default=True, nullable=False)
     costo_en_puntos = Column(Numeric(10, 2), nullable=True)
+    
+    # 🌟 NUEVO CAMPO AÑADIDO: Control de flujo (estado manual)
+    estado = Column(String, default="activa", nullable=False) 
 
 
 class OfertaRegla(Base):
@@ -184,6 +187,9 @@ class ComentarioPublicacion(Base):
     
     texto_comentario = Column(String, nullable=False)
     fecha_comentario = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # 🌟 NUEVO CAMPO AÑADIDO: Soft Delete para auditoría
+    esta_oculto = Column(Boolean, default=False, nullable=False)
 
 """
 ===============================================================================

@@ -210,7 +210,9 @@ Table Ofertas {
   limite_por_usuario int [note: "Null = ilimitado, 1 = uso único por consumidor"]
   es_publica boolean [not null, default: true, note: "Si es True, ignora la Whitelist"]
   costo_en_puntos decimal [default: null, note: "Si tiene valor, la oferta funciona como una recompensa que se 'compra' descontando saldo de la cartera"]
-
+  
+  // Control manual de la promoción
+  estado varchar [not null, default: "'activa'", note: "Ej: 'activa', 'pausada', 'finalizada'. Permite al dueño apagarla manualmente independientemente de las fechas."]
 }
 
 // Los "Bloques de Lego" para armar la oferta
@@ -346,9 +348,11 @@ Table Comentarios_Publicaciones {
   id int [pk, increment]
   id_publicacion int [not null, ref: > Publicaciones.id]
   id_usuario_consumidor int [not null, ref: > Usuarios.id]
-  
   texto_comentario varchar [not null]
   fecha_comentario timestamp [not null]
+  
+  // Borrado Lógico (Soft Delete)
+  esta_oculto boolean [not null, default: false, note: "Si es True, desaparece del feed de los consumidores, en la BD sigue existiendo."]
 }
 
 // ==========================================

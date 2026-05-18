@@ -7,7 +7,6 @@ import { FondoManager } from '../../../ui/Fondo';
 import { Calendario } from '../../../components/Agenda/Calendario';
 import { EventoCard } from '../../../components/Agenda/EventoCard';
 import { CrearCita } from '../../../components/Agenda/CrearCita'; 
-// 🌟 IMPORTAMOS LOS COMPONENTES DEL WORKSPACE DIRECTO AQUÍ
 import { WorkSpace } from '../../../components/Agenda/WorkSpace';
 import { InfoConsumidor } from '../../../components/Agenda/InfoConsumidor';
 
@@ -37,7 +36,6 @@ export default function AgendaIndex() {
   const [consumidorSeleccionado, setConsumidorSeleccionado] = useState<any>(null);
   const [isInfoVisible, setIsInfoVisible] = useState(false);
 
-  // Extraemos el fetch para poder llamarlo después de reprogramar/editar
   const fetchCitas = async () => {
     if (!negocioId) return;
     try {
@@ -66,14 +64,11 @@ export default function AgendaIndex() {
     }
   };
 
-  // ==========================================
-  // 🌟 FUNCIONES DEL WORKSPACE Y CRM
-  // ==========================================
   const handleGuardarEdicionWorkspace = async (nuevosDatos: any) => {
     if (!citaSeleccionadaId) return;
     try {
       await agendaService.actualizarCita(citaSeleccionadaId, nuevosDatos);
-      await fetchCitas(); // Recargamos para que la lista refleje el cambio
+      await fetchCitas(); 
       Alert.alert("Éxito", "Cambios guardados correctamente.");
     } catch (error: any) {
       Alert.alert("Error", error.message);
@@ -102,9 +97,6 @@ export default function AgendaIndex() {
     }
   };
 
-  // ==========================================
-  // FORMATEO DE DATOS
-  // ==========================================
   const formatHora = (isoString: string) => {
     const date = new Date(isoString);
     let hours = date.getHours();
@@ -131,7 +123,6 @@ export default function AgendaIndex() {
       estado: cita.estado,
       fechaReal: new Date(cita.fecha_hora_inicio), 
       fechaCard: formatFechaParaCard(cita.fecha_hora_inicio),
-      // Añadidos extra para que el Workspace los lea directamente
       fecha_hora_inicio_raw: cita.fecha_hora_inicio,
       fecha_hora_fin_raw: cita.fecha_hora_fin,
       notas_internas: cita.notas_internas || '',
@@ -141,7 +132,6 @@ export default function AgendaIndex() {
 
   const citasMapeadas = citasRaw.map(mapCitaToCard);
   
-  // 🌟 LÓGICA DE FILTRADO CORREGIDA
   const citasFiltradasAgenda = citasMapeadas.filter((cita) => {
     const hoy = new Date();
     const f = cita.fechaReal;
@@ -150,7 +140,6 @@ export default function AgendaIndex() {
       return f.getDate() === hoy.getDate() && f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear();
     }
     if (filtroTiempo === 'Semana') {
-      // 🌟 CORRECCIÓN: Filtramos desde el Domingo pasado hasta el próximo Sábado
       const inicioSemana = new Date(hoy);
       inicioSemana.setDate(hoy.getDate() - hoy.getDay());
       inicioSemana.setHours(0, 0, 0, 0);
@@ -178,7 +167,6 @@ export default function AgendaIndex() {
 
   // =======================================================
   // 🌟 RENDERIZADO CONDICIONAL (MASTER-DETAIL)
-  // Si hay una cita seleccionada, mostramos el WORKSPACE
   // =======================================================
   if (citaSeleccionadaId) {
     const citaWorkspace = citasMapeadas.find(c => c.id === citaSeleccionadaId);
@@ -223,6 +211,12 @@ export default function AgendaIndex() {
               visible={isInfoVisible} 
               consumidor={consumidorSeleccionado} 
               onClose={() => setIsInfoVisible(false)} 
+              // 🌟 NUEVO: EL PADRE CONTROLA EL CAMBIO DE VISTA SPA
+              onAbrirWorkspace={(idCita) => {
+                setIsInfoVisible(false); // 1. Cerramos modal
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                setCitaSeleccionadaId(idCita); // 2. Cambiamos de Workspace sin recargar pantallas
+              }}
             />
           </View>
         </FondoManager>
@@ -371,7 +365,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 15, backgroundColor: 'rgba(255, 255, 255, 0.8)' },
   
-  // 🌟 ESTILOS DEL HEADER DEL WORKSPACE MIGRADOS
   headerWorkspace: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 60, paddingBottom: 15, backgroundColor: '#ffffff', elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 5, zIndex: 10 },
   headerTitleContainer: { alignItems: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#1e293b' },

@@ -1,16 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-// 🌟 IMPORTAMOS EL ROUTER PARA LA NAVEGACIÓN
-import { router } from 'expo-router';
 
 interface InfoConsumidorProps {
   visible: boolean;
   consumidor: any;
   onClose: () => void;
+  // 🌟 NUEVO: Callback para comunicarnos con el orquestador principal (index.tsx)
+  onAbrirWorkspace: (idCita: number) => void; 
 }
 
-export const InfoConsumidor = ({ visible, consumidor, onClose }: InfoConsumidorProps) => {
+export const InfoConsumidor = ({ visible, consumidor, onClose, onAbrirWorkspace }: InfoConsumidorProps) => {
   if (!consumidor) return null;
 
   return (
@@ -41,15 +41,13 @@ export const InfoConsumidor = ({ visible, consumidor, onClose }: InfoConsumidorP
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
               {consumidor.historial_notas && consumidor.historial_notas.length > 0 ? (
                 consumidor.historial_notas.map((nota: any, index: number) => (
-                  // 🌟 AHORA ES UN BOTÓN QUE NOS LLEVA AL WORKSPACE DE ESA CITA
+                  // 🌟 AHORA USAMOS EL CALLBACK PARA MANTENER LA ARQUITECTURA SPA
                   <TouchableOpacity 
                     key={index} 
                     style={styles.noteCard}
                     activeOpacity={0.7}
                     onPress={() => {
-                      onClose(); // Cerramos este modal primero
-                      // Navegamos al EspacioAgenda pasando el ID de la cita histórica
-                      router.push(`/(screens)/agenda/EspacioAgenda?id_cita=${nota.id_cita}` as any);
+                      onAbrirWorkspace(nota.id_cita);
                     }}
                   >
                     <View style={styles.noteHeader}>
