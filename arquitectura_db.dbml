@@ -344,15 +344,21 @@ Table Publicaciones {
   fecha_publicacion timestamp [not null]
 }
 
-Table Comentarios_Publicaciones {
+Table Comentarios {
   id int [pk, increment]
-  id_publicacion int [not null, ref: > Publicaciones.id]
+  
+  // 🌟 PATRÓN DE ARCO EXCLUSIVO (Exclusive Arc)
+  id_publicacion int [ref: > Publicaciones.id, note: "Nulo si el comentario se hace directamente en la vista de una Oferta"]
+  id_oferta int [ref: > Ofertas.id, note: "Nulo si el comentario se hace directamente en un Post del Feed"]
+  
   id_usuario_consumidor int [not null, ref: > Usuarios.id]
   texto_comentario varchar [not null]
   fecha_comentario timestamp [not null]
   
   // Borrado Lógico (Soft Delete)
-  esta_oculto boolean [not null, default: false, note: "Si es True, desaparece del feed de los consumidores, en la BD sigue existiendo."]
+  esta_oculto boolean [not null, default: false, note: "Si es True, desaparece del feed, pero se mantiene en BD."]
+  
+  Note: "REGLA: Al crear esta tabla en SQL, se debe añadir -> CHECK ((id_publicacion IS NOT NULL AND id_oferta IS NULL) OR (id_publicacion IS NULL AND id_oferta IS NOT NULL))"
 }
 
 // ==========================================

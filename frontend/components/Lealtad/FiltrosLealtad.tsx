@@ -7,7 +7,8 @@ interface FiltrosLealtadProps {
 }
 
 export default function FiltrosLealtad({ filtroActivo, setFiltroActivo }: FiltrosLealtadProps) {
-  const filtros = ['Todas', 'Ofertas Activas', 'Publicaciones', 'Ofertas'];
+  // 🌟 NUEVO ORDEN Y NUEVO BOTÓN AÑADIDO
+  const filtros = ['Ofertas Activas', 'Ofertas', 'Publicaciones', 'Todas', 'Calificación'];
 
   return (
     <View style={styles.container}>
@@ -55,7 +56,7 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   pillActive: {
-    backgroundColor: '#3b82f6', // Azul primary
+    backgroundColor: '#3b82f6', 
     borderColor: '#2563eb',
   },
   pillText: {

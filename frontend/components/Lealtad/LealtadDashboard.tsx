@@ -10,17 +10,17 @@ import PublicacionCard from './PublicacionCard';
 import OfertaCard from './OfertaCard';
 import ModalCrearLealtad from './ModalCrearLealtad';
 
-// 🌟 IMPORTAMOS LOS WORKSPACES
 import WorkspaceOferta from './WorkspaceOferta';
 import WorkspacePublicacion from './WorkspacePublicacion';
+// 🌟 NUEVO: Importamos el Workspace de Calificación
+import WorkspaceCalificacion from './WorkspaceCalificacion';
 
 type ViewMode = 'lista' | 'workspaceOferta' | 'workspacePublicacion';
 
 export default function LealtadDashboard() {
-  const [filtroActivo, setFiltroActivo] = useState('Todas');
+  const [filtroActivo, setFiltroActivo] = useState('Ofertas Activas');
   const [modalVisible, setModalVisible] = useState(false);
   
-  // 🌟 NUEVO: ESTADO DE NAVEGACIÓN INTERNA (SPA)
   const [vistaActiva, setVistaActiva] = useState<ViewMode>('lista');
   const [itemSeleccionado, setItemSeleccionado] = useState<any>(null);
 
@@ -34,7 +34,7 @@ export default function LealtadDashboard() {
     if (filtroActivo === 'Ofertas Activas') return feedItems.filter(i => i.type === 'oferta' && i.estado === 'Activa');
     if (filtroActivo === 'Publicaciones') return feedItems.filter(i => i.type === 'publicacion');
     if (filtroActivo === 'Ofertas') return feedItems.filter(i => i.type === 'oferta');
-    return feedItems;
+    return feedItems; // Para 'Todas'
   };
 
   const abrirWorkspace = (item: any) => {
@@ -42,7 +42,6 @@ export default function LealtadDashboard() {
     setVistaActiva(item.type === 'oferta' ? 'workspaceOferta' : 'workspacePublicacion');
   };
 
-  // 🌟 LÓGICA DE NAVEGACIÓN DEL HEADER
   const handleBack = () => {
     if (vistaActiva !== 'lista') {
       setVistaActiva('lista');
@@ -52,16 +51,27 @@ export default function LealtadDashboard() {
     }
   };
 
-  // Renderizador Dinámico de la Pantalla Completa
+  // Renderizador Dinámico SPA
   const renderContenidoPrincipal = () => {
     if (vistaActiva === 'workspaceOferta' && itemSeleccionado) {
-      return <WorkspaceOferta ofertaMock={itemSeleccionado} onGuardarEdicion={(datos) => console.log("Guardando:", datos)} />;
+      return <WorkspaceOferta ofertaMock={itemSeleccionado} />;
     }
     
     if (vistaActiva === 'workspacePublicacion' && itemSeleccionado) {
-      return <WorkspacePublicacion publicacionMock={itemSeleccionado} onGuardarEdicion={(datos) => console.log("Guardando:", datos)} />;
+      return <WorkspacePublicacion publicacionMock={itemSeleccionado} />;
     }
 
+    // 🌟 NUEVO: Renderizado del Workspace de Calificación manteniendo los filtros arriba
+    if (filtroActivo === 'Calificación') {
+      return (
+        <>
+          <FiltrosLealtad filtroActivo={filtroActivo} setFiltroActivo={setFiltroActivo} />
+          <WorkspaceCalificacion />
+        </>
+      );
+    }
+
+    // Renderizado por defecto de la lista
     return (
       <>
         <FiltrosLealtad filtroActivo={filtroActivo} setFiltroActivo={setFiltroActivo} />
@@ -96,7 +106,6 @@ export default function LealtadDashboard() {
     <FondoManager tipoFondo="pattern-light">
       <View style={styles.container}>
         
-        {/* ENCABEZADO DINÁMICO */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton} activeOpacity={0.7}>
             <Ionicons name="arrow-back" size={24} color="#1e293b" />
@@ -120,7 +129,6 @@ export default function LealtadDashboard() {
           visible={modalVisible} 
           onClose={() => setModalVisible(false)} 
           idNegocio={1} 
-          onSuccess={() => console.log("Se creó un elemento")}
         />
 
       </View>

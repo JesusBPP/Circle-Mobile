@@ -91,7 +91,7 @@ def llenar_base_datos():
         db.commit()
 
         # ========================================================
-        # 🌟 NUEVO: INYECCIÓN DE DATOS DE FINANZAS / CAJAS
+        # INYECCIÓN DE DATOS DE FINANZAS / CAJAS
         # ========================================================
         print("🏦 Abriendo Cajas y Sesiones de Turno...")
         caja_principal = finanzas_models.CajaFisica(id_sucursal=sucursal_cafe.id, nombre="Caja Mostrador 1", esta_activa=True)
@@ -107,7 +107,6 @@ def llenar_base_datos():
         db.commit()
 
         print("💳 Simulando Transacciones y Detalles...")
-        # 🌟 Actualizado para usar finanzas_models
         transaccion1 = finanzas_models.Transaccion(id_usuario_consumidor=cons1.id, id_sesion_caja=sesion_juan.id, monto_total=165.00, metodo_pago="efectivo", estado_pago="completado", fecha_transaccion=datetime.utcnow())
         db.add(transaccion1)
         db.commit()
@@ -150,7 +149,16 @@ def llenar_base_datos():
         db.commit()
 
         print("🎁 Creando Reglas N x N y Canjes...")
-        oferta_vip = lealtad_models.Oferta(id_sucursales=sucursal_cafe.id, titulo="50% Off en Capuchino con tu Reserva", descripcion="Promo exclusiva", es_publica=False)
+        # 🌟 ACTUALIZACIÓN: Atributos añadidos a Oferta
+        oferta_vip = lealtad_models.Oferta(
+            id_sucursales=sucursal_cafe.id, 
+            titulo="50% Off en Capuchino con tu Reserva", 
+            descripcion="Promo exclusiva", 
+            es_publica=False,
+            estado="activa",
+            fecha_inicio=hoy,
+            fecha_fin=hoy + timedelta(days=30)
+        )
         db.add(oferta_vip)
         db.commit()
         
@@ -162,19 +170,48 @@ def llenar_base_datos():
         db.add(lealtad_models.OfertaWhitelist(id_oferta=oferta_vip.id, id_usuario_consumidor=cons1.id))
         db.commit()
 
-        # 🌟 NUEVO: Simulando que el usuario ya usó un QR
         uso_qr = lealtad_models.HistorialUsoOferta(id_oferta=oferta_vip.id, id_usuario_consumidor=cons1.id, id_transaccion=transaccion1.id, fecha_uso=datetime.utcnow())
         db.add(uso_qr)
         db.commit()
 
         print("📱 Creando Feed de Publicaciones del Negocio...")
-        pub_aviso = lealtad_models.Publicacion(id_negocio=negocio1.id, titulo="Cerramos hoy", descripcion="Aviso.", habilitar_comentarios=False)
-        pub_oferta = lealtad_models.Publicacion(id_negocio=negocio1.id, id_oferta=oferta_vip.id, titulo="Promo VIP", descripcion="Descuento", habilitar_comentarios=True)
+        
+        pub_aviso = lealtad_models.Publicacion(
+            id_negocio=negocio1.id,
+            titulo="¡Cerramos el 25 de Diciembre!",
+            descripcion="Aviso a nuestros clientes: El día 25 descansamos. Nos vemos el 26 con la mejor actitud.",
+            habilitar_comentarios=False
+        )
+
+        pub_oferta = lealtad_models.Publicacion(
+            id_negocio=negocio1.id,
+            id_oferta=oferta_vip.id,
+            titulo="Promoción VIP Secreta",
+            descripcion="Porque eres un cliente frecuente, si reservas hoy una mesa, te damos tu capuchino al 50%. ¡Dale click al botón para canjear!",
+            habilitar_comentarios=True
+        )
+
         db.add_all([pub_aviso, pub_oferta])
         db.commit()
 
-        comentario_juan = lealtad_models.ComentarioPublicacion(id_publicacion=pub_oferta.id, id_usuario_consumidor=cons1.id, texto_comentario="¡Excelente promo!")
-        db.add(comentario_juan)
+        # 🌟 ACTUALIZACIÓN: Renombrado a Comentario y prueba del Arco Exclusivo
+        comentario_juan = lealtad_models.Comentario(
+            id_publicacion=pub_oferta.id,
+            id_oferta=None,
+            id_usuario_consumidor=cons1.id,
+            texto_comentario="¡Excelente promo! Iré mañana mismo.",
+            esta_oculto=False
+        )
+        
+        comentario_directo_oferta = lealtad_models.Comentario(
+            id_publicacion=None,
+            id_oferta=oferta_vip.id,
+            id_usuario_consumidor=cons1.id,
+            texto_comentario="¿Aplica para descafeinado también?",
+            esta_oculto=False
+        )
+        
+        db.add_all([comentario_juan, comentario_directo_oferta])
         db.commit()
 
         print("✅ ¡Base de datos rellenada al 100% en todos sus dominios!")

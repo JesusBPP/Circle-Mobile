@@ -17,7 +17,7 @@ Tablas exactas contenidas en este archivo:
 7. carteras_lealtad
 8. historial_movimientos_lealtad
 9. publicaciones
-10. comentarios_publicaciones
+10. comentarios
 ===============================================================================
 """
 
@@ -62,7 +62,7 @@ class Oferta(Base):
     es_publica = Column(Boolean, default=True, nullable=False)
     costo_en_puntos = Column(Numeric(10, 2), nullable=True)
     
-    # 🌟 NUEVO CAMPO AÑADIDO: Control de flujo (estado manual)
+    # Control de flujo manual
     estado = Column(String, default="activa", nullable=False) 
 
 
@@ -159,7 +159,7 @@ class HistorialMovimientoLealtad(Base):
 
 
 # ==========================================
-# MÓDULO DE FEED / PUBLICACIONES
+# MÓDULO DE FEED Y COMENTARIOS
 # ==========================================
 
 class Publicacion(Base):
@@ -178,17 +178,22 @@ class Publicacion(Base):
     fecha_publicacion = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
-class ComentarioPublicacion(Base):
-    __tablename__ = "comentarios_publicaciones"
+# 🌟 TABLA RENOMBRADA Y ARQUITECTURA DE ARCO EXCLUSIVO
+class Comentario(Base):
+    __tablename__ = "comentarios"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    id_publicacion = Column(Integer, ForeignKey("publicaciones.id"), nullable=False)
+    
+    # Arco Exclusivo: O es un comentario de Publicación, o de Oferta. Ambos permiten Nulos.
+    id_publicacion = Column(Integer, ForeignKey("publicaciones.id"), nullable=True)
+    id_oferta = Column(Integer, ForeignKey("ofertas.id"), nullable=True)
+    
     id_usuario_consumidor = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
     
     texto_comentario = Column(String, nullable=False)
     fecha_comentario = Column(DateTime, default=datetime.utcnow, nullable=False)
     
-    # 🌟 NUEVO CAMPO AÑADIDO: Soft Delete para auditoría
+    # Soft Delete para auditoría
     esta_oculto = Column(Boolean, default=False, nullable=False)
 
 """
