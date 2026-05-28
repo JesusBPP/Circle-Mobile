@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Switch, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import lealtadService from '../../features/lealtad/lealtadService';
+
 interface FormularioPublicacionProps {
   idNegocio: number;
   onSuccess: () => void;
@@ -11,27 +13,32 @@ export default function FormularioPublicacion({ idNegocio, onSuccess }: Formular
   const [titulo, setTitulo] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [urlImagen, setUrlImagen] = useState('');
-  const [idOferta, setIdOferta] = useState(''); // 🌟 NUEVO: Enlace a Oferta
+  const [idOferta, setIdOferta] = useState(''); 
   const [habilitarComentarios, setHabilitarComentarios] = useState(true);
 
-  const handlePublicar = () => {
+  // 🌟 INTEGRACIÓN CON BACKEND (FastAPI)
+  const handlePublicar = async () => {
     if (!titulo.trim() || !descripcion.trim()) {
       Alert.alert('Campos Requeridos', 'El título y la descripción del post son mandatorios.');
       return;
     }
 
-    const payload = {
-      id_negocio: idNegocio,
-      titulo,
-      descripcion,
-      url_imagen: urlImagen.trim() || null,
-      id_oferta: idOferta.trim() ? parseInt(idOferta) : null, // Mapeo a BD
-      habilitar_comentarios: habilitarComentarios
-    };
+    try {
+      const payload = {
+        titulo,
+        descripcion,
+        url_imagen: urlImagen.trim() || null,
+        id_oferta: idOferta.trim() ? parseInt(idOferta) : null, // Mapeo a BD
+        habilitar_comentarios: habilitarComentarios
+      };
 
-    console.log('Publicando en muro comercial via FastAPI:', payload);
-    Alert.alert('Post Publicado', 'Aviso lanzado al feed.');
-    onSuccess();
+      await lealtadService.crearPublicacion(idNegocio, payload);
+      
+      Alert.alert('Post Publicado', 'Aviso lanzado al feed.');
+      onSuccess();
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Ocurrió un error al publicar el aviso.');
+    }
   };
 
   return (
@@ -46,7 +53,6 @@ export default function FormularioPublicacion({ idNegocio, onSuccess }: Formular
       <Text style={styles.label}>URL del Flyer / Imagen</Text>
       <TextInput style={styles.input} value={urlImagen} onChangeText={setUrlImagen} autoCapitalize="none" keyboardType="url" placeholder="https://... (Opcional)" placeholderTextColor="#94a3b8" />
 
-      {/* 🌟 NUEVO: ENLACE A OFERTA */}
       <Text style={styles.label}>Vincular a Oferta (ID Opcional)</Text>
       <TextInput style={styles.input} value={idOferta} onChangeText={setIdOferta} keyboardType="numeric" placeholder="Si es una promo, escribe el ID aquí..." placeholderTextColor="#94a3b8" />
 

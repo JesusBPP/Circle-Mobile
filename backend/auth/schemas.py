@@ -1,12 +1,18 @@
 from pydantic import BaseModel, EmailStr
 
+
 class LoginRequest(BaseModel):
-    # EmailStr valida automáticamente que tenga un '@' y un dominio válido
-    correo: EmailStr 
+    correo: EmailStr
     contrasena: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
     id_usuario: int
     nombre: str

@@ -99,7 +99,7 @@ export default function ModalCrearLealtad({ visible, onClose, idNegocio, onSucce
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)', // Capa oscura traslúcida Enterprise
+    backgroundColor: 'rgba(15, 23, 42, 0.6)', 
     justifyContent: 'flex-end',
   },
   modalContainer: {
@@ -149,11 +149,11 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   tabButtonOfertaActive: {
-    backgroundColor: '#2563eb', // Azul para el dominio de ofertas financieras
+    backgroundColor: '#2563eb', 
     borderColor: '#1d4ed8',
   },
   tabButtonPubActive: {
-    backgroundColor: '#16a34a', // Verde corporativo para posts/marketing social
+    backgroundColor: '#16a34a', 
     borderColor: '#15803d',
   },
   tabText: {

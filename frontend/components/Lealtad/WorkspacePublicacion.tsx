@@ -1,29 +1,32 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { PublicacionFeedItem } from './PublicacionCard';
 
 interface WorkspacePublicacionProps {
-  publicacionMock: any; 
+  publicacionData: PublicacionFeedItem; 
   onGuardarEdicion?: (nuevosDatos: any) => void;
 }
 
-export default function WorkspacePublicacion({ publicacionMock, onGuardarEdicion }: WorkspacePublicacionProps) {
+export default function WorkspacePublicacion({ publicacionData, onGuardarEdicion }: WorkspacePublicacionProps) {
   
-  const [titulo, setTitulo] = useState(publicacionMock.titulo || '');
-  const [descripcion, setDescripcion] = useState(publicacionMock.descripcion || '');
-  const [habilitarComentarios, setHabilitarComentarios] = useState(publicacionMock.habilitar_comentarios ?? true);
+  const [titulo, setTitulo] = useState(publicacionData.titulo || '');
+  const [descripcion, setDescripcion] = useState(publicacionData.descripcion || '');
+  const [habilitarComentarios, setHabilitarComentarios] = useState(publicacionData.habilitar_comentarios ?? true);
 
-  // Simulamos comentarios (Mapeo a Comentarios_Publicaciones)
-  const [comentarios, setComentarios] = useState(publicacionMock.comentarios || [
+  // 🌟 MOCK ARQUITECTÓNICO: Pendiente endpoint GET /comentarios
+  const [comentarios, setComentarios] = useState([
     { id: 1, nombre: 'Ana García', texto: '¡Me encanta esta noticia!', fecha: 'Hoy' },
     { id: 2, nombre: 'Luis Martínez', texto: '¿Aplica también en fines de semana?', fecha: 'Ayer' }
   ]);
 
-  const haCambiado = titulo !== (publicacionMock.titulo || '') || 
-                     descripcion !== (publicacionMock.descripcion || '') || 
-                     habilitarComentarios !== publicacionMock.habilitar_comentarios;
+  const haCambiado = titulo !== publicacionData.titulo || 
+                     descripcion !== publicacionData.descripcion || 
+                     habilitarComentarios !== publicacionData.habilitar_comentarios;
 
   const handleGuardarTextos = () => {
+    // 🌟 MOCK ARQUITECTÓNICO: Pendiente endpoint PUT /publicaciones/{id}
+    Alert.alert("Aviso", "Esta función requerirá el endpoint de actualización en FastAPI.");
     if (onGuardarEdicion) {
       onGuardarEdicion({ titulo, descripcion, habilitar_comentarios: habilitarComentarios });
     }
@@ -40,7 +43,7 @@ export default function WorkspacePublicacion({ publicacionMock, onGuardarEdicion
           style: "destructive",
           onPress: () => {
             setComentarios(comentarios.filter((c: any) => c.id !== idComentario));
-            // Aquí iría el llamado a FastAPI DELETE /api/lealtad/comentarios/{id}
+            // 🌟 MOCK ARQUITECTÓNICO: Pendiente llamado a FastAPI DELETE /api/lealtad/comentarios/{id}
           }
         }
       ]
@@ -50,7 +53,6 @@ export default function WorkspacePublicacion({ publicacionMock, onGuardarEdicion
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       
-      {/* 🌟 1. TARJETA DE EDICIÓN DEL POST */}
       <View style={styles.card}>
         <View style={[styles.cardHeader, { justifyContent: 'space-between' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -85,8 +87,7 @@ export default function WorkspacePublicacion({ publicacionMock, onGuardarEdicion
         </View>
       </View>
 
-      {/* 🌟 2. TARJETA DE ENLACE A OFERTA (Si aplica) */}
-      {publicacionMock.id_oferta && (
+      {publicacionData.id_oferta !== null && (
         <View style={[styles.card, { backgroundColor: '#f8fafc', borderColor: '#e2e8f0', borderWidth: 1 }]}>
            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View style={styles.linkIconBox}>
@@ -100,7 +101,6 @@ export default function WorkspacePublicacion({ publicacionMock, onGuardarEdicion
         </View>
       )}
 
-      {/* 🌟 3. TARJETA DE CRM SOCIAL (COMENTARIOS) */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Ionicons name="chatbubbles" size={20} color="#8b5cf6" />
@@ -144,20 +144,16 @@ const styles = StyleSheet.create({
   sectionSubtitle: { fontSize: 12, fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', marginBottom: 6 },
   textInput: { backgroundColor: '#f8fafc', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#e2e8f0', fontSize: 14, color: '#334155' },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
-  
   switchRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20, paddingTop: 15, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
   switchLabel: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
   switchSubtitle: { fontSize: 12, color: '#64748b', marginTop: 2 },
-
   linkIconBox: { backgroundColor: '#eff6ff', padding: 10, borderRadius: 12 },
   linkTitle: { fontSize: 14, fontWeight: '700', color: '#1e293b' },
   linkSubtitle: { fontSize: 12, color: '#64748b', marginTop: 2 },
-
   commentBox: { backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, marginBottom: 12, borderWidth: 1, borderColor: '#f1f5f9' },
   commentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 },
   commentName: { fontSize: 14, fontWeight: 'bold', color: '#3b82f6' },
   commentDate: { fontSize: 11, color: '#94a3b8' },
   commentText: { fontSize: 13, color: '#334155', lineHeight: 18 },
-  
   emptyFilesText: { fontSize: 13, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', marginVertical: 15 },
 });

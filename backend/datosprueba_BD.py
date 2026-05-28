@@ -1,6 +1,7 @@
 from datetime import date, datetime, timedelta
 from sqlalchemy import text 
 from backend.core.database import engine, Base, db_manager
+from backend.auth.security import hash_password
 
 # Importación de Modelos para la creación de tablas y semilla
 from backend.usuarios import models as usuarios_models
@@ -36,11 +37,11 @@ def llenar_base_datos():
         db.refresh(sub_gratis)
 
         print("👑 Creando Administradores, Consumidores, Dueños y Empleados...")
-        admin1 = usuarios_models.Usuario(nombre="Admin Alpha", correo="admin1@circle.com", contrasena="123", fecha_nacimiento=date(1990, 1, 1), codigo_postal="00000", es_admin_sistema=True)
-        cons1 = usuarios_models.Usuario(nombre="Juan Consumidor", correo="juan@gmail.com", contrasena="123", fecha_nacimiento=date(1995, 5, 10), codigo_postal="11111")
-        dueno1 = usuarios_models.Usuario(nombre="Carlos Dueño", correo="carlos@negocio.com", contrasena="123", fecha_nacimiento=date(1985, 3, 15), codigo_postal="33333")
-        dueno2 = usuarios_models.Usuario(nombre="Ana Dueña", correo="ana@negocio.com", contrasena="123", fecha_nacimiento=date(1988, 11, 30), codigo_postal="44444")
-        emp1 = usuarios_models.Usuario(nombre="Pedro Empleado", correo="pedro@negocio.com", contrasena="123", fecha_nacimiento=date(2000, 2, 14), codigo_postal="55555")
+        admin1 = usuarios_models.Usuario(nombre="Admin Alpha", correo="admin1@circle.com", contrasena=hash_password("123"), fecha_nacimiento=date(1990, 1, 1), codigo_postal="00000", es_admin_sistema=True)
+        cons1 = usuarios_models.Usuario(nombre="Juan Consumidor", correo="juan@gmail.com", contrasena=hash_password("123"), fecha_nacimiento=date(1995, 5, 10), codigo_postal="11111")
+        dueno1 = usuarios_models.Usuario(nombre="Carlos Dueño", correo="carlos@negocio.com", contrasena=hash_password("123"), fecha_nacimiento=date(1985, 3, 15), codigo_postal="33333")
+        dueno2 = usuarios_models.Usuario(nombre="Ana Dueña", correo="ana@negocio.com", contrasena=hash_password("123"), fecha_nacimiento=date(1988, 11, 30), codigo_postal="44444")
+        emp1 = usuarios_models.Usuario(nombre="Pedro Empleado", correo="pedro@negocio.com", contrasena=hash_password("123"), fecha_nacimiento=date(2000, 2, 14), codigo_postal="55555")
 
         db.add_all([admin1, cons1, dueno1, dueno2, emp1])
         db.commit() 

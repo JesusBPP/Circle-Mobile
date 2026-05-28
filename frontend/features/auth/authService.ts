@@ -1,12 +1,17 @@
 import { apiClient } from '../../api/apiClient';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export const loginUser = async (correo: string, contrasena: string) => {
   try {
-    // 🌟 REGLA DE ORO: Las rutas relativas NO empiezan con diagonal
     const response = await apiClient.post('auth/login', {
       correo: correo,
       contrasena: contrasena,
     });
+    
+    const { access_token, refresh_token } = response.data;
+    
+    useAuthStore.getState().setToken(access_token);
+    useAuthStore.getState().setRefreshToken(refresh_token);
     
     return response.data;
 

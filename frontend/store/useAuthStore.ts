@@ -10,6 +10,7 @@ export interface Herramienta {
 
 interface AuthState {
   token: string | null;
+  refreshToken: string | null;
   userName: string;
   negocioName: string;
   sucursalName: string;
@@ -17,6 +18,7 @@ interface AuthState {
   herramientasActivas: Herramienta[];
   
   setToken: (token: string) => void;
+  setRefreshToken: (refreshToken: string) => void;
   setDashboardData: (user: string, negocio: string, sucursal: string, negocioId: number) => void;
   setHerramientas: (herramientas: Herramienta[]) => void;
   addHerramienta: (herramienta: Herramienta) => void;
@@ -29,6 +31,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   token: null,
+  refreshToken: null,
   userName: 'Cargando...',
   negocioName: 'Cargando...',
   sucursalName: '...',
@@ -36,6 +39,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   herramientasActivas: [], 
 
   setToken: (token) => set({ token }),
+  
+  setRefreshToken: (refreshToken) => set({ refreshToken }),
   
   setDashboardData: (userName, negocioName, sucursalName, negocioId) => set({ 
     userName, negocioName, sucursalName, negocioId 
@@ -55,6 +60,12 @@ export const useAuthStore = create<AuthState>((set) => ({
   })),
   
   logout: () => set({ 
-    token: null, userName: '', negocioName: '', sucursalName: '', negocioId: null, herramientasActivas: [] 
+    token: null, 
+    refreshToken: null,
+    userName: '', 
+    negocioName: '', 
+    sucursalName: '', 
+    negocioId: null, 
+    herramientasActivas: [] 
   }),
 }));

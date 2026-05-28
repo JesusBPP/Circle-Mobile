@@ -3,6 +3,10 @@ import { View, Text, StyleSheet, TextInput, Switch, TouchableOpacity, Alert, Pla
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
+// Importamos el buscador inteligente y el servicio de red
+import { BuscadorUsuarios } from '../../ui/BuscadorUsuarios';
+import lealtadService from '../../features/lealtad/lealtadService';
+
 interface FormularioOfertaProps {
   idNegocio: number;
   onSuccess: () => void;
@@ -14,16 +18,29 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
   const [costoEnPuntos, setCostoEnPuntos] = useState('');
   const [limiteStock, setLimiteStock] = useState('');
   const [limitePorUsuario, setLimitePorUsuario] = useState('');
+  
   const [esPublica, setEsPublica] = useState(true);
+  
+  const [usuariosWhitelist, setUsuariosWhitelist] = useState<any[]>([]);
 
-  // 🌟 NUEVOS CAMPOS: Fechas de Vigencia (Basado en DBML)
   const [fechaInicio, setFechaInicio] = useState(new Date());
-  const [fechaFin, setFechaFin] = useState(new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000)); // +7 días por defecto
+  const [fechaFin, setFechaFin] = useState(new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000));
   const [showPickerInicio, setShowPickerInicio] = useState(false);
   const [showPickerFin, setShowPickerFin] = useState(false);
 
   const formatDateStr = (date: Date) => date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
 
+  const handleAddWhitelist = (usr: any) => {
+    if (!usuariosWhitelist.find(u => u.id === usr.id)) {
+      setUsuariosWhitelist([...usuariosWhitelist, usr]);
+    }
+  };
+
+  const handleRemoveWhitelist = (id: number) => {
+    setUsuariosWhitelist(usuariosWhitelist.filter(u => u.id !== id));
+  };
+
+  // 🌟 INTEGRACIÓN CON BACKEND (FastAPI)
   const handleGuardar = async () => {
     if (!titulo.trim()) {
       Alert.alert('Falta Información', 'El título de la oferta es estrictamente mandatorio.');
@@ -31,6 +48,10 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
     }
     if (fechaFin < fechaInicio) {
       Alert.alert('Error de Fechas', 'La fecha de fin no puede ser anterior a la fecha de inicio.');
+      return;
+    }
+    if (!esPublica && usuariosWhitelist.length === 0) {
+      Alert.alert('Whitelist Vacía', 'Si la oferta es VIP, debes seleccionar al menos un cliente.');
       return;
     }
 
@@ -44,13 +65,15 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
         costo_en_puntos: costoEnPuntos ? parseFloat(costoEnPuntos) : null,
         limite_existencias: limiteStock ? parseInt(limiteStock) : null,
         limite_por_usuario: limitePorUsuario ? parseInt(limitePorUsuario) : null,
+        whitelist_ids: esPublica ? [] : usuariosWhitelist.map(u => u.id),
       };
       
-      console.log('Enviando Oferta a FastAPI:', payload);
+      await lealtadService.crearOferta(idNegocio, payload);
+      
       Alert.alert('Éxito', 'Oferta promocional guardada correctamente.');
       onSuccess();
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Ocurrió un error en el servidor contable.');
+      Alert.alert('Error', error.message || 'Ocurrió un error al conectar con el servidor.');
     }
   };
 
@@ -63,7 +86,6 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
       <Text style={styles.label}>Descripción / Términos</Text>
       <TextInput style={[styles.input, styles.textArea]} value={descripcion} onChangeText={setDescripcion} multiline numberOfLines={3} placeholder="Explica las reglas..." placeholderTextColor="#94a3b8" />
 
-      {/* 🌟 NUEVO: CONTROLES DE VIGENCIA */}
       <View style={styles.row}>
         <View style={styles.flexItem}>
           <Text style={styles.label}>Válida Desde</Text>
@@ -98,13 +120,40 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
       <Text style={styles.label}>Límite de Canjes por Usuario</Text>
       <TextInput style={styles.input} value={limitePorUsuario} onChangeText={setLimitePorUsuario} keyboardType="numeric" placeholder="Ej: 1 (Para uso único)" placeholderTextColor="#94a3b8" />
 
-      <View style={styles.switchRow}>
+      {/* SWITCH DE VISIBILIDAD */}
+      <View style={[styles.switchRow, !esPublica && { marginBottom: 15 }]}>
         <View style={styles.switchTextWrapper}>
           <Text style={styles.switchLabel}>Promoción Pública</Text>
-          <Text style={styles.switchSubtitle}>{esPublica ? 'Visible para todos' : 'Exclusiva VIP (Whitelist)'}</Text>
+          <Text style={styles.switchSubtitle}>{esPublica ? 'Visible para todos los clientes' : 'Exclusiva VIP (Whitelist)'}</Text>
         </View>
         <Switch value={esPublica} onValueChange={setEsPublica} trackColor={{ false: '#cbd5e1', true: '#93c5fd' }} thumbColor={esPublica ? '#2563eb' : '#64748b'} />
       </View>
+
+      {/* RENDERIZADO CONDICIONAL DE LA WHITELIST */}
+      {!esPublica && (
+        <View style={styles.whitelistContainer}>
+          <Text style={styles.label}>Seleccionar Clientes VIP *</Text>
+          <BuscadorUsuarios 
+            negocioId={idNegocio} 
+            onSelect={handleAddWhitelist} 
+            placeholder="Buscar por nombre o correo..." 
+          />
+          
+          {/* BANDEJA DE CHIPS (Usuarios Seleccionados) */}
+          {usuariosWhitelist.length > 0 && (
+            <View style={styles.chipContainer}>
+              {usuariosWhitelist.map(usr => (
+                <View key={usr.id} style={styles.chip}>
+                  <Text style={styles.chipText}>{usr.nombre}</Text>
+                  <TouchableOpacity onPress={() => handleRemoveWhitelist(usr.id)} style={styles.chipClose}>
+                    <Ionicons name="close-circle" size={18} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
 
       <TouchableOpacity style={styles.submitButton} activeOpacity={0.8} onPress={handleGuardar}>
         <Ionicons name="cloud-upload-outline" size={20} color="#ffffff" />
@@ -128,6 +177,11 @@ const styles = StyleSheet.create({
   switchTextWrapper: { flex: 0.85 },
   switchLabel: { fontSize: 14, fontWeight: '700', color: '#334155' },
   switchSubtitle: { fontSize: 12, color: '#64748b', marginTop: 2 },
+  whitelistContainer: { backgroundColor: '#f8fafc', padding: 15, borderRadius: 16, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 24 },
+  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 5 },
+  chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#bfdbfe', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 20, elevation: 1, shadowColor: '#000', shadowOffset: {width: 0, height: 1}, shadowOpacity: 0.05, shadowRadius: 2 },
+  chipText: { fontSize: 12, color: '#1e293b', fontWeight: '600', marginRight: 6 },
+  chipClose: { marginLeft: 2 },
   submitButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#2563eb', borderRadius: 14, paddingVertical: 14, marginTop: 10, elevation: 2, shadowColor: '#2563eb', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 6 },
   submitButtonText: { color: '#ffffff', fontSize: 15, fontWeight: 'bold' }
 });

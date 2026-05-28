@@ -12,18 +12,41 @@ interface CanjeResponseData {
   descuento_aplicado: string;
 }
 
-/**
- * SERVICIO CAPA DE RED: MÓDULO DE LEALTAD Y BENEFICIOS QR
- * Centraliza la comunicación HTTP de promociones con FastAPI de manera limpia y tipada.
- */
 const lealtadService = {
-  /**
-   * Genera el token JWT firmado de corta duración para renderizar el QR del Consumidor
-   * @param idOferta Identificador único de la oferta promocional o recompensa
-   */
+  
+  // 🌟 NUEVO: Obtener todo el contexto del Dashboard
+  obtenerDashboard: async (idNegocio: number) => {
+    try {
+      const response = await apiClient.get(`/lealtad/negocios/${idNegocio}/dashboard`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || 'Error al cargar el Motor de Lealtad.');
+    }
+  },
+
+  // 🌟 NUEVO: Crear Oferta
+  crearOferta: async (idNegocio: number, payload: any) => {
+    try {
+      const response = await apiClient.post(`/lealtad/negocios/${idNegocio}/ofertas`, payload);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || 'Error al guardar la oferta comercial.');
+    }
+  },
+
+  // 🌟 NUEVO: Crear Publicación
+  crearPublicacion: async (idNegocio: number, payload: any) => {
+    try {
+      const response = await apiClient.post(`/lealtad/negocios/${idNegocio}/publicaciones`, payload);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || 'Error al lanzar la publicación al feed.');
+    }
+  },
+
   generarTokenQR: async (idOferta: number): Promise<QRTokenData> => {
     try {
-      const response = await apiClient.get<QRTokenData>(`/api/lealtad/ofertas/${idOferta}/generar-token-qr`);
+      const response = await apiClient.get<QRTokenData>(`/lealtad/ofertas/${idOferta}/generar-token-qr`);
       return response.data;
     } catch (error: any) {
       if (error.response && error.response.data && error.response.data.detail) {
@@ -33,14 +56,9 @@ const lealtadService = {
     }
   },
 
-  /**
-   * Envía el token QR escaneado por el establecimiento para validar y efectuar el cobro con descuento
-   * @param tokenQr Cadena de texto JWT leída de la cámara
-   * @param idTransaccion ID de la venta en curso en la sucursal
-   */
   canjearQR: async (tokenQr: string, idTransaccion: number): Promise<CanjeResponseData> => {
     try {
-      const response = await apiClient.post<CanjeResponseData>('/api/lealtad/ofertas/canjear-qr', {
+      const response = await apiClient.post<CanjeResponseData>('/lealtad/ofertas/canjear-qr', {
         token_qr: tokenQr,
         id_transaccion: idTransaccion
       });

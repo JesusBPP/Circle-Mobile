@@ -1,43 +1,42 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, SafeAreaView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ButtonNeo } from '../../ui/Button'; // Tu componente Neomórfico
-import MostrarQR from './MostrarQR'; // Nuestro generador de tokens JWT
+import { ButtonNeo } from '../../ui/Button'; 
+import MostrarQR from './MostrarQR'; 
+import { OfertaFeedItem } from './OfertaCard';
 
 interface WorkspaceOfertaProps {
-  ofertaMock: any; 
+  ofertaData: OfertaFeedItem; 
   onGuardarEdicion?: (nuevosDatos: any) => void;
 }
 
-export default function WorkspaceOferta({ ofertaMock, onGuardarEdicion }: WorkspaceOfertaProps) {
-  // Normalización de estado a prueba de fallos
-  const estadoRaw = ofertaMock.estado || 'Inactiva';
-  const estadoNormalizado = estadoRaw.charAt(0).toUpperCase() + estadoRaw.slice(1).toLowerCase();
-  const isActiva = estadoNormalizado === 'Activa';
-
+export default function WorkspaceOferta({ ofertaData, onGuardarEdicion }: WorkspaceOfertaProps) {
+  const isActiva = ofertaData.estado?.toLowerCase() === 'activa';
+  const estadoNormalizado = isActiva ? 'Activa' : 'Inactiva';
   const colorPrincipal = isActiva ? '#f59e0b' : '#64748b';
 
-  const [titulo, setTitulo] = useState(ofertaMock.titulo || '');
-  const [descripcion, setDescripcion] = useState(ofertaMock.descripcion || '');
+  const [titulo, setTitulo] = useState(ofertaData.titulo || '');
+  const [descripcion, setDescripcion] = useState(ofertaData.descripcion || '');
   const [modalQRVisible, setModalQRVisible] = useState(false);
 
-  const haCambiado = titulo !== (ofertaMock.titulo || '') || descripcion !== (ofertaMock.descripcion || '');
+  const haCambiado = titulo !== ofertaData.titulo || descripcion !== ofertaData.descripcion;
 
   const handleGuardarTextos = () => {
-    if (onGuardarEdicion) {
-      onGuardarEdicion({ titulo, descripcion });
-    }
+    // 🌟 MOCK ARQUITECTÓNICO: Pendiente endpoint PUT /ofertas/{id}
+    Alert.alert("Aviso", "Esta función requerirá el endpoint de actualización en FastAPI.");
+    if (onGuardarEdicion) onGuardarEdicion({ titulo, descripcion });
   };
 
   const toggleEstado = () => {
+    // 🌟 MOCK ARQUITECTÓNICO: Pendiente endpoint PUT /ofertas/{id}/estado
     const nuevoEstado = isActiva ? 'Inactiva' : 'Activa';
+    Alert.alert("Aviso", `El estado cambiaría a ${nuevoEstado} al conectar con FastAPI.`);
     if (onGuardarEdicion) onGuardarEdicion({ estado: nuevoEstado });
   };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       
-      {/* 🌟 1. TARJETA DE DETALLES PRINCIPALES */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Ionicons name="gift" size={20} color={colorPrincipal} />
@@ -46,18 +45,17 @@ export default function WorkspaceOferta({ ofertaMock, onGuardarEdicion }: Worksp
 
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Visibilidad:</Text>
-          <Text style={styles.infoValue}>{ofertaMock.es_publica ? 'Pública (Todos)' : 'Privada (Whitelist)'}</Text>
+          <Text style={styles.infoValue}>{ofertaData.es_publica ? 'Pública (Todos)' : 'Privada (Whitelist)'}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Costo en Puntos:</Text>
-          <Text style={styles.infoValue}>{ofertaMock.costo_en_puntos ? `${ofertaMock.costo_en_puntos} Pts` : 'Gratis'}</Text>
+          <Text style={styles.infoValue}>{ofertaData.costo_en_puntos !== null ? `${ofertaData.costo_en_puntos} Pts` : 'Gratis'}</Text>
         </View>
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Estado Actual:</Text>
           <Text style={[styles.infoValue, { fontWeight: 'bold', color: colorPrincipal }]}>{estadoNormalizado}</Text>
         </View>
 
-        {/* CONTROLES DE ESTADO */}
         <View style={styles.transitionsContainer}>
           <Text style={styles.sectionSubtitle}>Acciones de Operación:</Text>
           <View style={styles.buttonsRow}>
@@ -74,7 +72,6 @@ export default function WorkspaceOferta({ ofertaMock, onGuardarEdicion }: Worksp
         </View>
       </View>
 
-      {/* 🌟 2. TARJETA DE EDICIÓN DE TEXTOS */}
       <View style={styles.card}>
         <View style={[styles.cardHeader, { justifyContent: 'space-between' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -96,7 +93,6 @@ export default function WorkspaceOferta({ ofertaMock, onGuardarEdicion }: Worksp
         <TextInput style={[styles.textInput, styles.textArea]} multiline value={descripcion} onChangeText={setDescripcion} placeholder="Explica cómo aplica el descuento..." placeholderTextColor="#94a3b8" />
       </View>
 
-      {/* 🌟 3. TARJETA DE ANALÍTICA LOCAL Y QR */}
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <Ionicons name="analytics" size={20} color="#0ea5e9" />
@@ -105,11 +101,11 @@ export default function WorkspaceOferta({ ofertaMock, onGuardarEdicion }: Worksp
 
         <View style={styles.analyticsRow}>
           <View style={styles.analyticsBox}>
-            <Text style={styles.analyticsNumber}>{ofertaMock.usos_registrados || 0}</Text>
+            <Text style={styles.analyticsNumber}>0</Text>
             <Text style={styles.analyticsLabel}>Canjes Exitosos</Text>
           </View>
           <View style={styles.analyticsBox}>
-            <Text style={styles.analyticsNumber}>{ofertaMock.limite_existencias || '∞'}</Text>
+            <Text style={styles.analyticsNumber}>{ofertaData.limite_existencias !== null ? ofertaData.limite_existencias : '∞'}</Text>
             <Text style={styles.analyticsLabel}>Stock Restante</Text>
           </View>
         </View>
@@ -133,17 +129,14 @@ export default function WorkspaceOferta({ ofertaMock, onGuardarEdicion }: Worksp
 
       <View style={{ height: 40 }} />
 
-      {/* 🌟 MODAL DE SEGURIDAD PARA EL QR */}
       <Modal visible={modalQRVisible} animationType="slide" transparent={true} onRequestClose={() => setModalQRVisible(false)}>
         <View style={styles.modalOverlay}>
           <SafeAreaView style={styles.modalContent}>
             <TouchableOpacity style={styles.closeModalBtn} onPress={() => setModalQRVisible(false)}>
               <Ionicons name="close" size={24} color="#64748b" />
             </TouchableOpacity>
-            
-            {/* INYECTAMOS EL COMPONENTE INTELIGENTE DE TOKENS JWT */}
-            <MostrarQR idOferta={ofertaMock.id} onClose={() => setModalQRVisible(false)} />
-            
+            {/* 🌟 CONECTADO A FASTAPI */}
+            <MostrarQR idOferta={ofertaData.id_real} onClose={() => setModalQRVisible(false)} />
           </SafeAreaView>
         </View>
       </Modal>
@@ -174,8 +167,6 @@ const styles = StyleSheet.create({
   analyticsNumber: { fontSize: 24, fontWeight: '800', color: '#0ea5e9' },
   analyticsLabel: { fontSize: 11, color: '#64748b', textTransform: 'uppercase', marginTop: 4, fontWeight: '600' },
   emptyFilesText: { fontSize: 13, color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', marginVertical: 15 },
-  
-  // Estilos del Modal QR
   modalOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.8)', justifyContent: 'center', padding: 20 },
   modalContent: { backgroundColor: '#ffffff', borderRadius: 24, padding: 20, alignItems: 'center', position: 'relative' },
   closeModalBtn: { position: 'absolute', top: 15, right: 15, zIndex: 10, padding: 5, backgroundColor: '#f1f5f9', borderRadius: 20 }

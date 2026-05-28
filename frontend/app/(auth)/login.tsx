@@ -44,7 +44,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
 
   // 🌟 Extraemos setDashboardData también
-  const { setToken, setDashboardData } = useAuthStore();
+  const { setDashboardData } = useAuthStore();
 
   const handleLoginAttempt = async () => {
     Keyboard.dismiss();
@@ -58,10 +58,9 @@ export default function Login() {
       const userData = await loginUser(email, password);
       
       if (userData.access_token) {
-        setToken(userData.access_token);
         // 🌟 CLAVE PARA EVITAR EL ERROR 422: 
         // Le pasamos el nombre de inmediato para que `home.tsx` sepa si es Admin o no.
-        setDashboardData(userData.nombre, 'Cargando...', 'Cargando...');
+        setDashboardData(userData.nombre, 'Cargando...', 'Cargando...', 0);
       }
       
       // 🌟 Cambiamos la ruta hacia el Home real

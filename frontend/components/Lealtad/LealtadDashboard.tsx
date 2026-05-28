@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
-import { router } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { FondoManager } from '../../ui/Fondo'; 
@@ -12,29 +12,57 @@ import ModalCrearLealtad from './ModalCrearLealtad';
 
 import WorkspaceOferta from './WorkspaceOferta';
 import WorkspacePublicacion from './WorkspacePublicacion';
-// 🌟 NUEVO: Importamos el Workspace de Calificación
 import WorkspaceCalificacion from './WorkspaceCalificacion';
+
+// 🌟 INTEGRACIÓN DE RED Y CAPA DE DATOS ENTERPRISE
+import { useAuthStore } from '../../store/useAuthStore';
+import lealtadService from '../../features/lealtad/lealtadService';
 
 type ViewMode = 'lista' | 'workspaceOferta' | 'workspacePublicacion';
 
 export default function LealtadDashboard() {
+  const { negocioId } = useAuthStore(); 
+  
   const [filtroActivo, setFiltroActivo] = useState('Ofertas Activas');
   const [modalVisible, setModalVisible] = useState(false);
-  
   const [vistaActiva, setVistaActiva] = useState<ViewMode>('lista');
   const [itemSeleccionado, setItemSeleccionado] = useState<any>(null);
 
-  const feedItems = [
-    { id: 'o-1', type: 'oferta', titulo: 'Promoción VIP Secreta', descripcion: 'Descuento especial del 50%.', estado: 'Activa', es_publica: false, costo_en_puntos: 150, limite_existencias: 20, fecha: '17 May 2026' },
-    { id: 'p-1', type: 'publicacion', titulo: '¡Cerramos el 25 de Diciembre!', descripcion: 'Aviso a clientes.', habilitar_comentarios: false, id_oferta: null, fecha: '16 May 2026' },
-    { id: 'o-2', type: 'oferta', titulo: '2x1 en Corte de Cabello', descripcion: 'Ven con un amigo.', estado: 'Inactiva', es_publica: true, costo_en_puntos: null, limite_existencias: null, fecha: '10 May 2026' }
-  ];
+  // Estados dinámicos de servidor
+  const [feedItems, setFeedItems] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // 🌟 OBTENER CONFIGURACIÓN REAL DE FASTAPI
+  const fetchDashboardData = async () => {
+    if (!negocioId) return;
+    try {
+      setIsLoading(true);
+      const data = await lealtadService.obtenerDashboard(negocioId);
+      setFeedItems(data.feed_items || []);
+    } catch (error) {
+      console.error("Error detectado en la sincronización del Motor de Lealtad:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboardData();
+    }, [negocioId])
+  );
 
   const getFilteredItems = () => {
-    if (filtroActivo === 'Ofertas Activas') return feedItems.filter(i => i.type === 'oferta' && i.estado === 'Activa');
-    if (filtroActivo === 'Publicaciones') return feedItems.filter(i => i.type === 'publicacion');
-    if (filtroActivo === 'Ofertas') return feedItems.filter(i => i.type === 'oferta');
-    return feedItems; // Para 'Todas'
+    if (filtroActivo === 'Ofertas Activas') {
+      return feedItems.filter(i => i.type === 'oferta' && i.estado?.toLowerCase() === 'activa');
+    }
+    if (filtroActivo === 'Publicaciones') {
+      return feedItems.filter(i => i.type === 'publicacion');
+    }
+    if (filtroActivo === 'Ofertas') {
+      return feedItems.filter(i => i.type === 'oferta');
+    }
+    return feedItems; 
   };
 
   const abrirWorkspace = (item: any) => {
@@ -42,36 +70,52 @@ export default function LealtadDashboard() {
     setVistaActiva(item.type === 'oferta' ? 'workspaceOferta' : 'workspacePublicacion');
   };
 
+  const handleNavegarDesdeComentario = (tipo: 'workspaceOferta' | 'workspacePublicacion', idReferencia: string) => {
+    const itemEncontrado = feedItems.find(i => i.id === idReferencia);
+    if (itemEncontrado) {
+      setItemSeleccionado(itemEncontrado);
+      setVistaActiva(tipo);
+    }
+  };
+
   const handleBack = () => {
     if (vistaActiva !== 'lista') {
       setVistaActiva('lista');
       setItemSeleccionado(null);
+      fetchDashboardData(); 
     } else {
       router.back();
     }
   };
 
-  // Renderizador Dinámico SPA
   const renderContenidoPrincipal = () => {
+    if (isLoading) {
+      return (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text style={styles.loaderText}>Sincronizando feed transaccional...</Text>
+        </View>
+      );
+    }
+
+    // 🌟 CORRECCIÓN ARQUITECTÓNICA: Mapeo estricto de las props de los Workspaces
     if (vistaActiva === 'workspaceOferta' && itemSeleccionado) {
-      return <WorkspaceOferta ofertaMock={itemSeleccionado} />;
+      return <WorkspaceOferta ofertaData={itemSeleccionado} />;
     }
     
     if (vistaActiva === 'workspacePublicacion' && itemSeleccionado) {
-      return <WorkspacePublicacion publicacionMock={itemSeleccionado} />;
+      return <WorkspacePublicacion publicacionData={itemSeleccionado} />;
     }
 
-    // 🌟 NUEVO: Renderizado del Workspace de Calificación manteniendo los filtros arriba
     if (filtroActivo === 'Calificación') {
       return (
         <>
           <FiltrosLealtad filtroActivo={filtroActivo} setFiltroActivo={setFiltroActivo} />
-          <WorkspaceCalificacion />
+          <WorkspaceCalificacion onNavegarAWorkspace={handleNavegarDesdeComentario} />
         </>
       );
     }
 
-    // Renderizado por defecto de la lista
     return (
       <>
         <FiltrosLealtad filtroActivo={filtroActivo} setFiltroActivo={setFiltroActivo} />
@@ -87,7 +131,7 @@ export default function LealtadDashboard() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Ionicons name="document-text-outline" size={48} color="#cbd5e1" />
-              <Text style={styles.emptyText}>No hay elementos para mostrar.</Text>
+              <Text style={styles.emptyText}>No hay elementos en esta categoría.</Text>
             </View>
           }
         />
@@ -128,7 +172,8 @@ export default function LealtadDashboard() {
         <ModalCrearLealtad 
           visible={modalVisible} 
           onClose={() => setModalVisible(false)} 
-          idNegocio={1} 
+          idNegocio={negocioId || 1} 
+          onSuccess={fetchDashboardData} 
         />
 
       </View>
@@ -147,5 +192,7 @@ const styles = StyleSheet.create({
   listContent: { padding: 20, paddingBottom: 100 },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingTop: 50 },
   emptyText: { marginTop: 10, fontSize: 15, color: '#94a3b8', fontWeight: '500' },
-  fabContainer: { position: 'absolute', bottom: 30, right: 20, zIndex: 10 }
+  fabContainer: { position: 'absolute', bottom: 30, right: 20, zIndex: 10 },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loaderText: { marginTop: 12, fontSize: 14, color: '#64748b', fontWeight: '500' }
 });
