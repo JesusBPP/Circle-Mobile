@@ -4,9 +4,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { DropdownButton } from '../../ui/DropdownButton';
 import SelectorSucursales, { SucursalData } from './SelectorSucursales';
 
-// 🌟 INTEGRACIÓN CON EL BACKEND
 import { useAuthStore } from '../../store/useAuthStore';
 import lealtadService from '../../features/lealtad/lealtadService';
+
+interface ComentarioUnificado {
+  id: number;
+  tipo: 'resena' | 'oferta' | 'publicacion';
+  nombre: string;
+  fecha: string;
+  puntuacion: number | null;
+  texto: string;
+  origen: string;
+  ref_id: string | null;
+}
 
 interface WorkspaceCalificacionProps {
   onNavegarAWorkspace: (tipo: 'workspaceOferta' | 'workspacePublicacion', idReferencia: string) => void;
@@ -20,19 +30,10 @@ export default function WorkspaceCalificacion({ onNavegarAWorkspace }: Workspace
   const [sucursales, setSucursales] = useState<SucursalData[]>([]);
   const [sucursalActiva, setSucursalActiva] = useState<SucursalData | null>(null);
   const [filtroComentarios, setFiltroComentarios] = useState('Todos');
-
-  // 🌟 MOCK ARQUITECTÓNICO: Pendiente de crear endpoint GET /comentarios en FastAPI
-  const feedbackMock = [
-    { id: 1, tipo: 'resena', nombre: 'Juan Consumidor', fecha: 'Hoy', puntuacion: 5, texto: '¡El mejor café de la ciudad!', origen: 'Reseña de Sucursal', ref_id: null },
-    { id: 2, tipo: 'oferta', nombre: 'Ana García', fecha: 'Ayer', puntuacion: null, texto: '¿Aplica en fin de semana?', origen: 'Oferta: 2x1 en Corte', ref_id: 'o-2' },
-    { id: 3, tipo: 'publicacion', nombre: 'Luis Martínez', fecha: 'Hace 3 días', puntuacion: null, texto: '¡Descansen!', origen: 'Publicación: Cerramos el 25', ref_id: 'p-1' }
-  ];
-
-  const origenesUnicos = ['Todos', ...Array.from(new Set(feedbackMock.map(f => f.origen)))];
-  const comentariosFiltrados = filtroComentarios === 'Todos' ? feedbackMock : feedbackMock.filter(f => f.origen === filtroComentarios);
+  const [comentariosReales, setComentariosReales] = useState<ComentarioUnificado[]>([]);
 
   useEffect(() => {
-    const cargarMetricasReales = async () => {
+    const cargarDatos = async () => {
       if (!negocioId) return;
       try {
         setIsLoading(true);
@@ -45,14 +46,75 @@ export default function WorkspaceCalificacion({ onNavegarAWorkspace }: Workspace
         if (data.sucursales.length > 0) {
           setSucursalActiva(data.sucursales[0]);
         }
+
+        const comentariosCargados: ComentarioUnificado[] = [];
+
+        const ofertas = data.feed_items?.filter((item: any) => item.type === 'oferta') || [];
+        for (const oferta of ofertas) {
+          try {
+            const comentariosOferta = await lealtadService.obtenerComentariosOferta(oferta.id_real);
+            comentariosOferta.forEach((com: any) => {
+              comentariosCargados.push({
+                id: com.id,
+                tipo: 'oferta',
+                nombre: `Consumidor #${com.id_usuario_consumidor}`,
+                fecha: formatearFechaRelativa(com.fecha_comentario),
+                puntuacion: null,
+                texto: com.texto_comentario,
+                origen: `Oferta: ${oferta.titulo}`,
+                ref_id: oferta.id,
+              });
+            });
+          } catch (error) {
+            console.error(`Error cargando comentarios de oferta ${oferta.id_real}:`, error);
+          }
+        }
+
+        const publicaciones = data.feed_items?.filter((item: any) => item.type === 'publicacion') || [];
+        for (const pub of publicaciones) {
+          try {
+            const comentariosPub = await lealtadService.obtenerComentariosPublicacion(pub.id_real);
+            comentariosPub.forEach((com: any) => {
+              comentariosCargados.push({
+                id: com.id,
+                tipo: 'publicacion',
+                nombre: `Consumidor #${com.id_usuario_consumidor}`,
+                fecha: formatearFechaRelativa(com.fecha_comentario),
+                puntuacion: null,
+                texto: com.texto_comentario,
+                origen: `Publicación: ${pub.titulo}`,
+                ref_id: pub.id,
+              });
+            });
+          } catch (error) {
+            console.error(`Error cargando comentarios de publicación ${pub.id_real}:`, error);
+          }
+        }
+
+        setComentariosReales(comentariosCargados);
       } catch (error) {
-        console.error("Error al cargar calificaciones:", error);
+        console.error('Error al cargar calificaciones:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    cargarMetricasReales();
+    cargarDatos();
   }, [negocioId]);
+
+  const formatearFechaRelativa = (fechaISO: string) => {
+    const fecha = new Date(fechaISO);
+    const ahora = new Date();
+    const diffMs = ahora.getTime() - fecha.getTime();
+    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDias === 0) return 'Hoy';
+    if (diffDias === 1) return 'Ayer';
+    if (diffDias < 7) return `Hace ${diffDias} días`;
+    return fecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+  };
+
+  const origenesUnicos = ['Todos', ...Array.from(new Set(comentariosReales.map(f => f.origen)))];
+  const comentariosFiltrados = filtroComentarios === 'Todos' ? comentariosReales : comentariosReales.filter(f => f.origen === filtroComentarios);
 
   const renderEstrellas = (calificacion: number) => (
     <View style={{ flexDirection: 'row', gap: 2 }}>
@@ -99,16 +161,18 @@ export default function WorkspaceCalificacion({ onNavegarAWorkspace }: Workspace
           </View>
         </View>
 
-        <View style={{ marginBottom: 15 }}>
-          <DropdownButton title={`Filtro: ${filtroComentarios}`} variant="minimal" icon={<Ionicons name="filter" size={16} color="#64748b"/>}>
-            {origenesUnicos.map((origen) => (
-              <TouchableOpacity key={origen} style={styles.filterOption} onPress={() => setFiltroComentarios(origen)}>
-                <Text style={[styles.filterOptionText, filtroComentarios === origen && styles.filterOptionTextActive]}>{origen}</Text>
-                {filtroComentarios === origen && <Ionicons name="checkmark" size={16} color="#3b82f6" />}
-              </TouchableOpacity>
-            ))}
-          </DropdownButton>
-        </View>
+        {origenesUnicos.length > 1 && (
+          <View style={{ marginBottom: 15 }}>
+            <DropdownButton title={`Filtro: ${filtroComentarios}`} variant="minimal" icon={<Ionicons name="filter" size={16} color="#64748b"/>}>
+              {origenesUnicos.map((origen) => (
+                <TouchableOpacity key={origen} style={styles.filterOption} onPress={() => setFiltroComentarios(origen)}>
+                  <Text style={[styles.filterOptionText, filtroComentarios === origen && styles.filterOptionTextActive]}>{origen}</Text>
+                  {filtroComentarios === origen && <Ionicons name="checkmark" size={16} color="#3b82f6" />}
+                </TouchableOpacity>
+              ))}
+            </DropdownButton>
+          </View>
+        )}
 
         {comentariosFiltrados.length > 0 ? (
           comentariosFiltrados.map((item) => (

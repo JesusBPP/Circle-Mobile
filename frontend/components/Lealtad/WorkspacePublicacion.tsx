@@ -1,7 +1,15 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Switch, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PublicacionFeedItem } from './PublicacionCard';
+import lealtadService from '../../features/lealtad/lealtadService';
+
+interface ComentarioItem {
+  id: number;
+  texto_comentario: string;
+  fecha_comentario: string;
+  id_usuario_consumidor: number;
+}
 
 interface WorkspacePublicacionProps {
   publicacionData: PublicacionFeedItem; 
@@ -13,41 +21,80 @@ export default function WorkspacePublicacion({ publicacionData, onGuardarEdicion
   const [titulo, setTitulo] = useState(publicacionData.titulo || '');
   const [descripcion, setDescripcion] = useState(publicacionData.descripcion || '');
   const [habilitarComentarios, setHabilitarComentarios] = useState(publicacionData.habilitar_comentarios ?? true);
-
-  // 🌟 MOCK ARQUITECTÓNICO: Pendiente endpoint GET /comentarios
-  const [comentarios, setComentarios] = useState([
-    { id: 1, nombre: 'Ana García', texto: '¡Me encanta esta noticia!', fecha: 'Hoy' },
-    { id: 2, nombre: 'Luis Martínez', texto: '¿Aplica también en fines de semana?', fecha: 'Ayer' }
-  ]);
+  const [comentarios, setComentarios] = useState<ComentarioItem[]>([]);
+  const [cargandoComentarios, setCargandoComentarios] = useState(true);
+  const [guardando, setGuardando] = useState(false);
 
   const haCambiado = titulo !== publicacionData.titulo || 
                      descripcion !== publicacionData.descripcion || 
                      habilitarComentarios !== publicacionData.habilitar_comentarios;
 
-  const handleGuardarTextos = () => {
-    // 🌟 MOCK ARQUITECTÓNICO: Pendiente endpoint PUT /publicaciones/{id}
-    Alert.alert("Aviso", "Esta función requerirá el endpoint de actualización en FastAPI.");
-    if (onGuardarEdicion) {
-      onGuardarEdicion({ titulo, descripcion, habilitar_comentarios: habilitarComentarios });
+  useEffect(() => {
+    const cargarComentarios = async () => {
+      try {
+        setCargandoComentarios(true);
+        const data = await lealtadService.obtenerComentariosPublicacion(publicacionData.id_real);
+        setComentarios(data);
+      } catch (error) {
+        console.error('Error al cargar comentarios:', error);
+        setComentarios([]);
+      } finally {
+        setCargandoComentarios(false);
+      }
+    };
+    cargarComentarios();
+  }, [publicacionData.id_real]);
+
+  const handleGuardarTextos = async () => {
+    try {
+      setGuardando(true);
+      await lealtadService.actualizarPublicacion(publicacionData.id_real, { 
+        titulo, 
+        descripcion, 
+        habilitar_comentarios: habilitarComentarios 
+      });
+      Alert.alert('Éxito', 'Publicación actualizada correctamente.');
+      if (onGuardarEdicion) {
+        onGuardarEdicion({ titulo, descripcion, habilitar_comentarios: habilitarComentarios });
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'No se pudo actualizar la publicación.');
+    } finally {
+      setGuardando(false);
     }
   };
 
   const handleEliminarComentario = (idComentario: number) => {
     Alert.alert(
-      "Eliminar Comentario",
-      "¿Estás seguro de que deseas ocultar este comentario del feed público?",
+      'Eliminar Comentario',
+      '¿Estás seguro de que deseas ocultar este comentario del feed público?',
       [
-        { text: "Cancelar", style: "cancel" },
+        { text: 'Cancelar', style: 'cancel' },
         { 
-          text: "Eliminar", 
-          style: "destructive",
-          onPress: () => {
-            setComentarios(comentarios.filter((c: any) => c.id !== idComentario));
-            // 🌟 MOCK ARQUITECTÓNICO: Pendiente llamado a FastAPI DELETE /api/lealtad/comentarios/{id}
+          text: 'Eliminar', 
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await lealtadService.ocultarComentario(idComentario);
+              setComentarios(comentarios.filter((c) => c.id !== idComentario));
+            } catch (error: any) {
+              Alert.alert('Error', error.message || 'No se pudo ocultar el comentario.');
+            }
           }
         }
       ]
     );
+  };
+
+  const formatearFecha = (fechaISO: string) => {
+    const fecha = new Date(fechaISO);
+    const ahora = new Date();
+    const diffMs = ahora.getTime() - fecha.getTime();
+    const diffDias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDias === 0) return 'Hoy';
+    if (diffDias === 1) return 'Ayer';
+    return fecha.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
   };
 
   return (
@@ -60,9 +107,15 @@ export default function WorkspacePublicacion({ publicacionData, onGuardarEdicion
             <Text style={styles.cardTitle}>Comunicado del Feed</Text>
           </View>
           {haCambiado && (
-            <TouchableOpacity style={styles.saveBadge} onPress={handleGuardarTextos}>
-              <Ionicons name="save-outline" size={14} color="#fff" />
-              <Text style={styles.saveBadgeText}>Guardar</Text>
+            <TouchableOpacity style={[styles.saveBadge, guardando && { opacity: 0.5 }]} onPress={handleGuardarTextos} disabled={guardando}>
+              {guardando ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <>
+                  <Ionicons name="save-outline" size={14} color="#fff" />
+                  <Text style={styles.saveBadgeText}>Guardar</Text>
+                </>
+              )}
             </TouchableOpacity>
           )}
         </View>
@@ -107,21 +160,26 @@ export default function WorkspacePublicacion({ publicacionData, onGuardarEdicion
           <Text style={styles.cardTitle}>Feedback de Clientes</Text>
         </View>
 
-        {!habilitarComentarios && comentarios.length === 0 ? (
+        {cargandoComentarios ? (
+          <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+            <ActivityIndicator size="small" color="#8b5cf6" />
+            <Text style={[styles.emptyFilesText, { marginTop: 10 }]}>Cargando comentarios...</Text>
+          </View>
+        ) : !habilitarComentarios && comentarios.length === 0 ? (
           <Text style={styles.emptyFilesText}>Los comentarios están desactivados para este post.</Text>
         ) : comentarios.length > 0 ? (
-          comentarios.map((com: any) => (
+          comentarios.map((com) => (
             <View key={com.id} style={styles.commentBox}>
               <View style={styles.commentHeader}>
-                <Text style={styles.commentName}>{com.nombre}</Text>
+                <Text style={styles.commentName}>Consumidor #{com.id_usuario_consumidor}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <Text style={styles.commentDate}>{com.fecha}</Text>
+                  <Text style={styles.commentDate}>{formatearFecha(com.fecha_comentario)}</Text>
                   <TouchableOpacity onPress={() => handleEliminarComentario(com.id)}>
                     <Ionicons name="trash-outline" size={16} color="#ef4444" />
                   </TouchableOpacity>
                 </View>
               </View>
-              <Text style={styles.commentText}>{com.texto}</Text>
+              <Text style={styles.commentText}>{com.texto_comentario}</Text>
             </View>
           ))
         ) : (

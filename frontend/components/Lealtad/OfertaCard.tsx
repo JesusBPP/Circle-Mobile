@@ -7,13 +7,31 @@ export interface OfertaFeedItem {
   id: string;
   id_real: number;
   type: string;
+  id_sucursales: number;
+  nombre_sucursal: string;
   titulo: string;
   descripcion: string;
   estado: string;
   es_publica: boolean;
   costo_en_puntos: number | null;
   limite_existencias: number | null;
+  limite_por_usuario: number | null;
+  fecha_inicio: string;
+  fecha_fin: string;
   fecha: string;
+  total_canjes: number;
+  stock_restante: number | null;
+  reglas?: Array<{
+    id: number;
+    tipo_regla: string;
+    id_servicio_disponible: number | null;
+    nombre_servicio_disponible: string | null;
+    tipo_servicio_disponible: string | null;
+    cantidad: number | null;
+    porcentaje_descuento: number | null;
+    monto_descuento: number | null;
+    monto_minimo: number | null;
+  }>;
 }
 
 interface OfertaCardProps {
@@ -38,6 +56,7 @@ export default function OfertaCard({ data, onPress }: OfertaCardProps) {
       </View>
 
       <Text style={styles.title} numberOfLines={1}>{data.titulo}</Text>
+      <Text style={styles.cardSubtitle}>📍 {data.nombre_sucursal}</Text>
       <Text style={styles.description} numberOfLines={2}>{data.descripcion}</Text>
 
       <View style={styles.footer}>
@@ -69,6 +88,7 @@ const styles = StyleSheet.create({
   textInactive: { color: '#64748b' },
   typeText: { fontSize: 12, fontWeight: '600', color: '#0ea5e9' },
   title: { fontSize: 18, fontWeight: '700', color: '#1e293b', marginBottom: 6 },
+  cardSubtitle: { fontSize: 12, color: '#64748b', marginBottom: 6 },
   description: { fontSize: 14, color: '#64748b', lineHeight: 20, marginBottom: 15 },
   footer: { flexDirection: 'row', gap: 15 },
   statBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, gap: 6, borderWidth: 1, borderColor: '#e2e8f0' },

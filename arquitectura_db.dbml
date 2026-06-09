@@ -220,11 +220,17 @@ Table Ofertas_Reglas {
   id int [pk, increment]
   id_oferta int [not null, ref: > Ofertas.id]
   tipo_regla varchar [not null, note: "'requisito' o 'recompensa'"]
-  id_servicio_disponible int [ref: > Servicios_Disponibles.id]
-  cantidad int
+}
+
+// Tabla intermedia: conecta una regla con múltiples productos/servicios
+Table Ofertas_Reglas_Servicios {
+  id int [pk, increment]
+  id_oferta_regla int [not null, ref: > Ofertas_Reglas.id]
+  id_servicio_disponible int [not null, ref: > Servicios_Disponibles.id]
+  cantidad int [default: 1]
   porcentaje_descuento decimal
   monto_descuento decimal
-  monto_minimo decimal
+  monto_minimo decimal [note: "Solo para requisitos"]
 }
 
 // Exclusividad de la oferta

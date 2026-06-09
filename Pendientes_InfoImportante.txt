@@ -85,8 +85,774 @@ _____________________________________________________________________
 admin1@circle.com
 carlos@negocio.com
 
-
+Usuarios (19 total):
+- 1 Admin: admin1@circle.com
+- 5 Dueños: carlos@negocio.com, ana@negocio.com, luis@negocio.com, maria@negocio.com, roberto@negocio.com
+- 3 Empleados: pedro@negocio.com, laura@negocio.com, miguel@negocio.com
+- 10 Consumidores: juan@gmail.com, maria.garcia@gmail.com, carlos.lopez@gmail.com, ana.martinez@gmail.com, roberto.hdz@gmail.com, 
+                    paty.ramirez@gmail.com, fer.torres@gmail.com, gaby.flores@gmail.com, diego.morales@gmail.com, sofia.vargas@gmail.com
+Negocios (5):
+1. Cafetería El Grano (3 sucursales: Centro, Sur, Norte)
+2. Barbería Classic (2 sucursales: Norte, Centro)
+3. Spa Relajación Total (2 sucursales: Polanco, Coyoacán)
+4. Gimnasio PowerFit (1 sucursal: Roma)
+5. Restaurante La Casa (2 sucursales: Centro, Sur)
+Catálogo: 16 productos/servicios, 5 materiales, 28 servicios disponibles por sucursal
+Ofertas (8): Con reglas NxN completas, algunas públicas, otras VIP, una pausada
+Publicaciones (9): Con y sin ofertas vinculadas
+Comentarios (20): 17 visibles + 3 ocultos (para probar funcionalidad de ocultar)
+Contraseñas: Todas son 123
 ______________________________________________________________________
+
+
+================================================================================
+================================================================================
+                       PROMPTS OPTIMIZADOS PARA QWEN 3:8B
+
+📋 PROMPT 1: Crear Tabla Intermedia para Reglas NxN Multi-Producto
+CONTEXTO:
+- Proyecto: Circle (SaaS para negocios)
+- Stack: Python 3.12 + FastAPI + SQLAlchemy + PostgreSQL
+- Convención: Todo en español, sin comentarios innecesarios
+- Problema: El motor NxN actual solo permite UN producto/servicio por regla
+
+ARCHIVO A MODIFICAR:
+backend/lealtad/models.py
+
+TAREA ESPECÍFICA:
+Crear nueva tabla intermedia `OfertaReglaServicio` que conecta una regla con múltiples productos/servicios.
+
+PATRÓN A SEGUIR:
+Replicar el mismo patrón que `NegocioSolucion` (tabla intermedia many-to-many):
+class NegocioSolucion(Base):
+    __tablename__ = "negocios_soluciones"
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id_negocio = Column(Integer, ForeignKey("negocios.id"), nullable=False)
+    id_solucion = Column(Integer, ForeignKey("soluciones.id"), nullable=False)
+    esta_activa = Column(Boolean, default=True, nullable=False)
+    negocio = relationship("Negocio", back_populates="soluciones_instaladas")
+    solucion = relationship("Solucion", back_populates="negocios_instaladores")
+
+RESTRICCIONES:
+- Nombre tabla: "ofertas_reglas_servicios"
+- FKs: id_oferta_regla → ofertas_reglas.id, id_servicio_disponible → servicios_disponibles.id
+- Campos adicionales: cantidad (Integer, default=1), porcentaje_descuento (Numeric(5,2)), monto_descuento (Numeric(10,2)), monto_minimo (Numeric(10,2))
+- Relationships: regla (back_populates="servicios"), servicio_disponible (sin back_populates)
+- Ubicación: Después de la clase OfertaRegla
+- NO modificar otras clases
+- NO agregar comentarios
+
+OUTPUT ESPERADO:
+Solo la clase OfertaReglaServicio completa, mostrando 2 líneas de contexto antes (fin de OfertaRegla) y después (siguiente clase o fin de archivo).
+
+📋 PROMPT 2: Modificar OfertaRegla para Usar Tabla Intermedia
+CONTEXTO:
+- Proyecto: Circle (SaaS para negocios)
+- Stack: Python 3.12 + FastAPI + SQLAlchemy + PostgreSQL
+- Convención: Todo en español, sin comentarios innecesarios
+- Dependencia: La tabla ofertas_reglas_servicios ya existe
+
+ARCHIVO A MODIFICAR:
+backend/lealtad/models.py
+
+TAREA ESPECÍFICA:
+Modificar clase OfertaRegla para eliminar campos que se movieron a tabla intermedia y agregar relationship a servicios.
+
+PATRÓN A SEGUIR:
+Eliminar estos campos de OfertaRegla:
+- id_servicio_disponible
+- cantidad
+- porcentaje_descuento
+- monto_descuento
+- monto_minimo
+
+Agregar relationship:
+servicios = relationship("OfertaReglaServicio", back_populates="regla", cascade="all, delete-orphan")
+
+RESTRICCIONES:
+- Mantener: id, id_oferta, tipo_regla, oferta (relationship)
+- Usar cascade="all, delete-orphan" para eliminar servicios cuando se borra la regla
+- NO modificar otras clases
+- NO agregar comentarios
+
+OUTPUT ESPERADO:
+Solo la clase OfertaRegla modificada completa, mostrando 2 líneas de contexto antes y después.
+
+📋 PROMPT 3: Actualizar DBML con Nueva Tabla Intermedia
+CONTEXTO:
+- Proyecto: Circle (SaaS para negocios)
+- Stack: Python 3.12 + FastAPI + SQLAlchemy + PostgreSQL
+- Convención: Todo en español, sin comentarios innecesarios
+- Fuente de verdad: arquitectura_db.dbml debe reflejar cambios en modelos
+
+ARCHIVO A MODIFICAR:
+arquitectura_db.dbml
+
+TAREA ESPECÍFICA:
+Agregar tabla Ofertas_Reglas_Servicios y modificar Ofertas_Reglas para eliminar campos movidos a tabla intermedia.
+
+PATRÓN A SEGUIR:
+Replicar el mismo patrón que Negocios_Soluciones (tabla intermedia en DBML):
+Table Negocios_Soluciones {
+  id int [pk, increment]
+  id_negocio int [not null, ref: > Negocios.id]
+  id_solucion int [not null, ref: > Soluciones.id]
+  esta_activa bool [not null, default: true]
+}
+
+RESTRICCIONES:
+- Nombre tabla: Ofertas_Reglas_Servicios
+- FKs: id_oferta_regla → Ofertas_Reglas.id, id_servicio_disponible → Servicios_Disponibles.id
+- Campos: cantidad (int, default: 1), porcentaje_descuento (decimal), monto_descuento (decimal), monto_minimo (decimal, note: "Solo para requisitos")
+- Modificar Ofertas_Reglas: eliminar id_servicio_disponible, cantidad, porcentaje_descuento, monto_descuento, monto_minimo
+- Ubicación: Después de Ofertas_Reglas
+- NO modificar otras tablas
+
+OUTPUT ESPERADO:
+Solo las tablas Ofertas_Reglas (modificada) y Ofertas_Reglas_Servicios (nueva), mostrando 2 líneas de contexto antes y después.
+
+📋 PROMPT 4: Crear Schema para Regla con Múltiples Servicios
+CONTEXTO:
+- Proyecto: Circle (SaaS para negocios)
+- Stack: Python 3.12 + FastAPI + SQLAlchemy + PostgreSQL
+- Convención: Todo en español, sin comentarios innecesarios
+- Dependencia: Tabla ofertas_reglas_servicios ya existe en modelos
+
+ARCHIVO A MODIFICAR:
+backend/lealtad/schemas.py
+
+HERRAMIENTA A USAR:
+edit (NO uses write, que sobrescribe todo el archivo)
+
+TAREA ESPECÍFICA:
+Insertar dos nuevas clases después de la clase OfertaCreate existente:
+1. OfertaReglaServicioCreate
+2. OfertaReglaCreate
+
+CÓDIGO A INSERTAR (newString):
+
+class OfertaReglaServicioCreate(BaseModel):
+    id_servicio_disponible: int
+    cantidad: int = 1
+    porcentaje_descuento: Optional[float] = None
+    monto_descuento: Optional[float] = None
+    monto_minimo: Optional[float] = None
+
+
+class OfertaReglaCreate(BaseModel):
+    tipo_regla: str
+    servicios: List[OfertaReglaServicioCreate]
+
+
+DÓNDE INSERTAR (oldString):
+Busca el final de la clase OfertaCreate, que termina con:
+        return values
+
+
+class PublicacionCreate(BaseModel):
+
+Y reemplázalo con:
+        return values
+
+
+class OfertaReglaServicioCreate(BaseModel):
+    id_servicio_disponible: int
+    cantidad: int = 1
+    porcentaje_descuento: Optional[float] = None
+    monto_descuento: Optional[float] = None
+    monto_minimo: Optional[float] = None
+
+
+class OfertaReglaCreate(BaseModel):
+    tipo_regla: str
+    servicios: List[OfertaReglaServicioCreate]
+
+
+class PublicacionCreate(BaseModel):
+
+RESTRICCIONES:
+- NO agregar model_config (es para Create, no Response)
+- NO modificar otros schemas
+- NO agregar comentarios
+
+VALIDACIÓN:
+Después de ejecutar, verifica que el archivo tenga las dos nuevas clases entre OfertaCreate y PublicacionCreate.
+
+📋 PROMPT 5: Crear Schema Response para Regla con Servicios
+CONTEXTO:
+- Proyecto: Circle (SaaS para negocios)
+- Stack: Python 3.12 + FastAPI + SQLAlchemy + PostgreSQL
+- Convención: Todo en español, sin comentarios innecesarios
+- Dependencia: Schemas OfertaReglaServicioCreate y OfertaReglaCreate ya existen
+
+ARCHIVO A MODIFICAR:
+backend/lealtad/schemas.py
+
+HERRAMIENTA A USAR:
+edit (NO uses write, que sobrescribe todo el archivo)
+
+TAREA ESPECÍFICA:
+Insertar dos nuevas clases después de OfertaReglaCreate:
+1. OfertaReglaServicioResponse
+2. OfertaReglaResponse
+
+CÓDIGO A INSERTAR (newString):
+
+class OfertaReglaServicioResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    id_servicio_disponible: int
+    nombre_servicio: str
+    tipo_servicio: str
+    cantidad: int
+    porcentaje_descuento: Optional[float] = None
+    monto_descuento: Optional[float] = None
+    monto_minimo: Optional[float] = None
+
+
+class OfertaReglaResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    tipo_regla: str
+    servicios: List[OfertaReglaServicioResponse]
+
+
+DÓNDE INSERTAR (oldString):
+Busca el final de la clase OfertaReglaCreate, que termina con:
+    servicios: List[OfertaReglaServicioCreate]
+
+
+class PublicacionCreate(BaseModel):
+
+Y reemplázalo con:
+    servicios: List[OfertaReglaServicioCreate]
+
+
+class OfertaReglaServicioResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    id_servicio_disponible: int
+    nombre_servicio: str
+    tipo_servicio: str
+    cantidad: int
+    porcentaje_descuento: Optional[float] = None
+    monto_descuento: Optional[float] = None
+    monto_minimo: Optional[float] = None
+
+
+class OfertaReglaResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    tipo_regla: str
+    servicios: List[OfertaReglaServicioResponse]
+
+
+class PublicacionCreate(BaseModel):
+
+RESTRICCIONES:
+- Ambos deben tener model_config = ConfigDict(from_attributes=True)
+- NO modificar otros schemas
+- NO agregar comentarios
+
+VALIDACIÓN:
+Después de ejecutar, verifica que el archivo tenga las dos nuevas clases entre OfertaReglaCreate y PublicacionCreate.
+
+📋 PROMPT 6: Adaptar Service para Crear Reglas Multi-Producto
+CONTEXTO:
+- Proyecto: Circle (SaaS para negocios)
+- Stack: Python 3.12 + FastAPI + SQLAlchemy + PostgreSQL
+- Convención: Todo en español, sin comentarios innecesarios
+- Dependencia: Schemas y modelos de tabla intermedia ya existen
+
+ARCHIVO A MODIFICAR:
+backend/lealtad/service.py
+
+HERRAMIENTA A USAR:
+edit (NO uses write, que sobrescribe todo el archivo)
+
+TAREA ESPECÍFICA:
+Modificar la función crear_oferta_negocio() para crear múltiples OfertaReglaServicio por cada regla usando la tabla intermedia.
+
+CÓDIGO ACTUAL A REEMPLAZAR (oldString):
+Busca este bloque en la función crear_oferta_negocio():
+
+            if oferta.reglas:
+                reglas_db = [
+                    models.OfertaRegla(
+                        id_oferta=nueva_oferta.id,
+                        tipo_regla=regla.tipo_regla,
+                        id_servicio_disponible=regla.id_servicio_disponible,
+                        cantidad=regla.cantidad,
+                        porcentaje_descuento=regla.porcentaje_descuento,
+                        monto_descuento=regla.monto_descuento,
+                        monto_minimo=regla.monto_minimo,
+                    )
+                    for regla in oferta.reglas
+                ]
+                db.add_all(reglas_db)
+
+Y reemplázalo con:
+
+            if oferta.reglas:
+                for regla in oferta.reglas:
+                    nueva_regla = models.OfertaRegla(
+                        id_oferta=nueva_oferta.id,
+                        tipo_regla=regla.tipo_regla,
+                    )
+                    db.add(nueva_regla)
+                    db.flush()
+
+                    if regla.servicios:
+                        for servicio in regla.servicios:
+                            nuevo_servicio = models.OfertaReglaServicio(
+                                id_oferta_regla=nueva_regla.id,
+                                id_servicio_disponible=servicio.id_servicio_disponible,
+                                cantidad=servicio.cantidad,
+                                porcentaje_descuento=servicio.porcentaje_descuento,
+                                monto_descuento=servicio.monto_descuento,
+                                monto_minimo=servicio.monto_minimo if regla.tipo_regla == 'requisito' else None,
+                            )
+                            db.add(nuevo_servicio)
+
+RESTRICCIONES:
+- NO modificar otras funciones
+- NO agregar comentarios
+- monto_minimo solo se guarda si tipo_regla == 'requisito'
+
+VALIDACIÓN:
+Después de ejecutar, verifica que la función crear_oferta_negocio() use la tabla intermedia OfertaReglaServicio.
+
+📋 PROMPT 7: Adaptar Service para Leer Reglas Multi-Producto en Dashboard
+CONTEXTO:
+- Proyecto: Circle (SaaS para negocios)
+- Stack: Python 3.12 + FastAPI + SQLAlchemy + PostgreSQL
+- Convención: Todo en español, sin comentarios innecesarios
+- Dependencia: Schemas Response y tabla intermedia ya existen
+
+ARCHIVO A MODIFICAR:
+backend/lealtad/service.py
+
+HERRAMIENTA A USAR:
+edit (NO uses write, que sobrescribe todo el archivo)
+
+TAREA ESPECÍFICA:
+Modificar la sección de serialización de reglas en obtener_dashboard_negocio() para usar la tabla intermedia OfertaReglaServicio.
+
+CÓDIGO ACTUAL A REEMPLAZAR (oldString):
+Busca este bloque en la función obtener_dashboard_negocio():
+
+        reglas_serializadas = []
+        for r in reglas_lista:
+            nombre_servicio = None
+            tipo_servicio = None
+            if r.id_servicio_disponible:
+                disponible = db.query(catalogo_models.ServicioDisponible).filter(
+                    catalogo_models.ServicioDisponible.id == r.id_servicio_disponible
+                ).first()
+                if disponible:
+                    producto = db.query(catalogo_models.ServicioProducto).filter(
+                        catalogo_models.ServicioProducto.id == disponible.id_servicio_producto
+                    ).first()
+                    if producto:
+                        nombre_servicio = producto.nombre
+                        tipo_servicio = producto.tipo_producto
+
+            reglas_serializadas.append({
+                "id": r.id,
+                "tipo_regla": r.tipo_regla,
+                "id_servicio_disponible": r.id_servicio_disponible,
+                "nombre_servicio_disponible": nombre_servicio,
+                "tipo_servicio_disponible": tipo_servicio,
+                "cantidad": r.cantidad,
+                "porcentaje_descuento": float(r.porcentaje_descuento) if r.porcentaje_descuento else None,
+                "monto_descuento": float(r.monto_descuento) if r.monto_descuento else None,
+                "monto_minimo": float(r.monto_minimo) if r.monto_minimo else None,
+            })
+
+Y reemplázalo con:
+
+        reglas_serializadas = []
+        for r in reglas_lista:
+            servicios_regla = db.query(models.OfertaReglaServicio).filter(
+                models.OfertaReglaServicio.id_oferta_regla == r.id
+            ).all()
+
+            servicios_serializados = []
+            for s in servicios_regla:
+                disponible = db.query(catalogo_models.ServicioDisponible).filter(
+                    catalogo_models.ServicioDisponible.id == s.id_servicio_disponible
+                ).first()
+                if disponible:
+                    producto = db.query(catalogo_models.ServicioProducto).filter(
+                        catalogo_models.ServicioProducto.id == disponible.id_servicio_producto
+                    ).first()
+                    servicios_serializados.append({
+                        "id": s.id,
+                        "id_servicio_disponible": s.id_servicio_disponible,
+                        "nombre_servicio": producto.nombre if producto else None,
+                        "tipo_servicio": producto.tipo_producto if producto else None,
+                        "cantidad": s.cantidad,
+                        "porcentaje_descuento": float(s.porcentaje_descuento) if s.porcentaje_descuento else None,
+                        "monto_descuento": float(s.monto_descuento) if s.monto_descuento else None,
+                        "monto_minimo": float(s.monto_minimo) if s.monto_minimo else None,
+                    })
+
+            reglas_serializadas.append({
+                "id": r.id,
+                "tipo_regla": r.tipo_regla,
+                "servicios": servicios_serializados,
+            })
+
+RESTRICCIONES:
+- NO modificar otras funciones
+- NO agregar comentarios
+- Agrupar servicios por regla
+
+VALIDACIÓN:
+Después de ejecutar, verifica que la función obtener_dashboard_negocio() serialice múltiples servicios por regla.
+
+📋 PROMPT 8: Cambiar Eliminación de Ofertas a Soft Delete
+CONTEXTO:
+- Proyecto: Circle (SaaS para negocios)
+- Stack: Python 3.12 + FastAPI + SQLAlchemy + PostgreSQL
+- Convención: Todo en español, sin comentarios innecesarios
+- Patrón: Soft delete (cambiar estado, no borrar de BD)
+
+ARCHIVO A MODIFICAR:
+backend/lealtad/service.py
+
+HERRAMIENTA A USAR:
+edit (NO uses write, que sobrescribe todo el archivo)
+
+TAREA ESPECÍFICA:
+Modificar la función eliminar_oferta() para hacer soft delete (cambiar estado a 'eliminada') en lugar de hard delete.
+
+CÓDIGO ACTUAL A REEMPLAZAR (oldString):
+Busca esta función completa:
+
+def eliminar_oferta(db: Session, id_oferta: int):
+    """Elimina permanentemente una oferta solo si no tiene canjes registrados."""
+    oferta = db.query(models.Oferta).filter(models.Oferta.id == id_oferta).first()
+    if not oferta:
+        raise HTTPException(status_code=404, detail="Oferta no encontrada.")
+
+    usos = db.query(models.HistorialUsoOferta).filter(
+        models.HistorialUsoOferta.id_oferta == id_oferta
+    ).count()
+
+    if usos > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="No puedes eliminar una oferta que ya ha sido canjeada por clientes. Si deseas detenerla, cambia su estado a 'pausada'."
+        )
+
+    db.query(models.OfertaWhitelist).filter(models.OfertaWhitelist.id_oferta == id_oferta).delete()
+    db.query(models.OfertaRegla).filter(models.OfertaRegla.id_oferta == id_oferta).delete()
+    db.query(models.Comentario).filter(models.Comentario.id_oferta == id_oferta).delete()
+
+    db.delete(oferta)
+    db.commit()
+    return {"mensaje": "Oferta eliminada correctamente."}
+
+Y reemplázala con:
+
+def eliminar_oferta(db: Session, id_oferta: int):
+    """Elimina lógicamente una oferta (estado = 'eliminada')."""
+    oferta = db.query(models.Oferta).filter(models.Oferta.id == id_oferta).first()
+    if not oferta:
+        raise HTTPException(status_code=404, detail="Oferta no encontrada.")
+
+    oferta.estado = 'eliminada'
+    db.commit()
+    return {"mensaje": "Oferta eliminada correctamente."}
+
+RESTRICCIONES:
+- NO modificar otras funciones
+- NO agregar comentarios
+- Soft delete: solo cambiar estado, no borrar de BD
+
+VALIDACIÓN:
+Después de ejecutar, verifica que la función eliminar_oferta() solo cambie el estado a 'eliminada'.
+
+📋 PROMPT 9: Filtrar Ofertas Eliminadas en Dashboard
+CONTEXTO:
+- Proyecto: Circle (SaaS para negocios)
+- Stack: Python 3.12 + FastAPI + SQLAlchemy + PostgreSQL
+- Convención: Todo en español, sin comentarios innecesarios
+- Dependencia: Función eliminar_oferta() ya hace soft delete
+
+ARCHIVO A MODIFICAR:
+backend/lealtad/service.py
+
+HERRAMIENTA A USAR:
+edit (NO uses write, que sobrescribe todo el archivo)
+
+TAREA ESPECÍFICA:
+Agregar filtro en la query de ofertas en obtener_dashboard_negocio() para excluir ofertas con estado='eliminada'.
+
+CÓDIGO ACTUAL A REEMPLAZAR (oldString):
+Busca este bloque en la función obtener_dashboard_negocio():
+
+    ofertas_db = db.query(models.Oferta).filter(
+        models.Oferta.id_sucursales.in_(id_sucursales)
+    ).all()
+
+Y reemplázalo con:
+
+    ofertas_db = db.query(models.Oferta).filter(
+        models.Oferta.id_sucursales.in_(id_sucursales),
+        models.Oferta.estado != 'eliminada'
+    ).all()
+
+RESTRICCIONES:
+- NO modificar otras funciones
+- NO agregar comentarios
+- Mantener todos los demás filtros existentes
+
+VALIDACIÓN:
+Después de ejecutar, verifica que la query de ofertas filtre las eliminadas.
+
+📋 PROMPT 10: Condicionar Campos de Fechas vs Stock en Frontend
+CONTEXTO:
+- Proyecto: Circle (SaaS para negocios)
+- Stack: React Native (Expo SDK 54) + TypeScript + Zustand
+- Convención: Todo en español, sin comentarios innecesarios
+- Regla de negocio: Si hay límite de stock, NO puede haber fechas (y viceversa)
+
+ARCHIVO A MODIFICAR:
+frontend/components/Lealtad/FormularioOferta.tsx
+
+HERRAMIENTA A USAR:
+edit (NO uses write, que sobrescribe todo el archivo)
+
+TAREA ESPECÍFICA:
+Condicionar la visibilidad de los campos de fechas basado en si hay límite de stock.
+
+CÓDIGO ACTUAL A REEMPLAZAR (oldString):
+Busca este bloque:
+
+        <View style={styles.row}>
+          <View style={styles.flexItem}>
+            <Text style={styles.label}>Válida Desde <Text style={styles.required}>*</Text></Text>
+            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickerInicio(true)}>
+              <Ionicons name="calendar-outline" size={16} color="#475569" />
+              <Text style={styles.dateText}>{formatDateStr(fechaInicio)}</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.flexItem}>
+            <Text style={styles.label}>Válida Hasta <Text style={styles.required}>*</Text></Text>
+            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickerFin(true)}>
+              <Ionicons name="calendar-outline" size={16} color="#475569" />
+              <Text style={styles.dateText}>{formatDateStr(fechaFin)}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {showPickerInicio && (<DateTimePicker value={fechaInicio} mode="date" display="default" onChange={(e, d) => { setShowPickerInicio(Platform.OS === 'ios'); if (d) setFechaInicio(d); }}/>)}
+        {showPickerFin && (<DateTimePicker value={fechaFin} mode="date" display="default" onChange={(e, d) => { setShowPickerFin(Platform.OS === 'ios'); if (d) setFechaFin(d); }}/>)}
+
+Y reemplázalo con:
+
+        {limiteStock === '' || parseInt(limiteStock) === 0 ? (
+          <>
+            <View style={styles.row}>
+              <View style={styles.flexItem}>
+                <Text style={styles.label}>Válida Desde <Text style={styles.required}>*</Text></Text>
+                <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickerInicio(true)}>
+                  <Ionicons name="calendar-outline" size={16} color="#475569" />
+                  <Text style={styles.dateText}>{formatDateStr(fechaInicio)}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.flexItem}>
+                <Text style={styles.label}>Válida Hasta <Text style={styles.required}>*</Text></Text>
+                <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickerFin(true)}>
+                  <Ionicons name="calendar-outline" size={16} color="#475569" />
+                  <Text style={styles.dateText}>{formatDateStr(fechaFin)}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {showPickerInicio && (<DateTimePicker value={fechaInicio} mode="date" display="default" onChange={(e, d) => { setShowPickerInicio(Platform.OS === 'ios'); if (d) setFechaInicio(d); }}/>)}
+            {showPickerFin && (<DateTimePicker value={fechaFin} mode="date" display="default" onChange={(e, d) => { setShowPickerFin(Platform.OS === 'ios'); if (d) setFechaFin(d); }}/>)}
+          </>
+        ) : (
+          <View style={styles.infoBox}>
+            <Ionicons name="information-circle" size={20} color="#3b82f6" />
+            <Text style={styles.infoText}>Esta oferta caducará automáticamente cuando se agote el stock.</Text>
+          </View>
+        )}
+
+RESTRICCIONES:
+- NO modificar otros campos
+- NO agregar comentarios
+- Usar Ionicons name="information-circle" para el mensaje
+
+VALIDACIÓN:
+Después de ejecutar, verifica que los campos de fechas solo aparezcan cuando limiteStock esté vacío o sea 0.
+
+📋 PROMPT 11: Agregar Botón Eliminar en OfertaCard
+CONTEXTO:
+- Proyecto: Circle (SaaS para negocios)
+- Stack: React Native (Expo SDK 54) + TypeScript + Zustand
+- Convención: Todo en español, sin comentarios innecesarios
+- Dependencia: Método eliminarOferta() ya existe en lealtadService
+
+ARCHIVO A MODIFICAR:
+frontend/components/Lealtad/OfertaCard.tsx
+
+HERRAMIENTA A USAR:
+edit (NO uses write, que sobrescribe todo el archivo)
+
+TAREA ESPECÍFICA:
+Agregar botón de eliminar (ícono de basura) en cada card de oferta con confirmación antes de eliminar.
+
+CÓDIGO ACTUAL A REEMPLAZAR (oldString):
+Busca este bloque al final del componente:
+
+      <View style={styles.footer}>
+        <View style={styles.statBox}>
+          <Ionicons name="gift-outline" size={16} color="#64748b" />
+          <Text style={styles.statText}>
+            {data.costo_en_puntos !== null ? `${data.costo_en_puntos} Pts` : 'Gratis'}
+          </Text>
+        </View>
+        <View style={styles.statBox}>
+          <Ionicons name="cube-outline" size={16} color="#64748b" />
+          <Text style={styles.statText}>
+            {data.limite_existencias !== null ? `${data.limite_existencias} disp.` : 'Ilimitado'}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+
+Y reemplázalo con:
+
+      <View style={styles.footer}>
+        <View style={styles.statBox}>
+          <Ionicons name="gift-outline" size={16} color="#64748b" />
+          <Text style={styles.statText}>
+            {data.costo_en_puntos !== null ? `${data.costo_en_puntos} Pts` : 'Gratis'}
+          </Text>
+        </View>
+        <View style={styles.statBox}>
+          <Ionicons name="cube-outline" size={16} color="#64748b" />
+          <Text style={styles.statText}>
+            {data.limite_existencias !== null ? `${data.limite_existencias} disp.` : 'Ilimitado'}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            Alert.alert(
+              'Eliminar Oferta',
+              '¿Estás seguro? Esta acción no se puede deshacer.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Eliminar',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await lealtadService.eliminarOferta(data.id_real);
+                      Alert.alert('Éxito', 'Oferta eliminada correctamente.');
+                      if (onEliminar) onEliminar();
+                    } catch (error: any) {
+                      Alert.alert('Error', error.message || 'No se pudo eliminar la oferta.');
+                    }
+                  }
+                }
+              ]
+            );
+          }}
+        >
+          <Ionicons name="trash-outline" size={20} color="#ef4444" />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+
+También necesitas:
+1. Agregar import de Alert y lealtadService al inicio del archivo:
+   import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+   import lealtadService from '../../features/lealtad/lealtadService';
+
+2. Agregar prop onEliminar a la interfaz OfertaCardProps:
+   interface OfertaCardProps {
+     data: OfertaFeedItem;
+     onPress: () => void;
+     onEliminar?: () => void;
+   }
+
+3. Actualizar la firma del componente:
+   export default function OfertaCard({ data, onPress, onEliminar }: OfertaCardProps) {
+
+4. Agregar estilo deleteButton al StyleSheet:
+   deleteButton: { marginLeft: 'auto', padding: 8 }
+
+RESTRICCIONES:
+- NO modificar otros componentes
+- NO agregar comentarios
+- Usar Alert.alert con botones "Cancelar" y "Eliminar" (style: 'destructive')
+
+VALIDACIÓN:
+Después de ejecutar, verifica que cada card de oferta tenga un botón de eliminar rojo.
+
+📋 PROMPT 12: [YA COMPLETADO] Método eliminarOferta en lealtadService
+ESTADO: ✅ YA EXISTE en frontend/features/lealtad/lealtadService.ts (línea 85)
+
+El método eliminarOferta ya está implementado correctamente:
+  eliminarOferta: async (idOferta: number) => {
+    try {
+      const response = await apiClient.delete(`/lealtad/ofertas/${idOferta}`);
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || 'Error al eliminar la oferta.');
+    }
+  },
+
+NO SE REQUIERE EJECUTAR ESTE PROMPT.
+
+📊 Resumen de Prompts Optimizados
+Prompt	Enfoque	Archivo
+4	Crear schemas Create	backend/lealtad/schemas.py
+5	Crear schemas Response	backend/lealtad/schemas.py
+6	Adaptar crear_oferta_negocio()	backend/lealtad/service.py
+7	Adaptar obtener_dashboard_negocio()	backend/lealtad/service.py
+8	Cambiar a soft delete	backend/lealtad/service.py
+9	Filtrar ofertas eliminadas	backend/lealtad/service.py
+10	Condicionar fechas vs stock	frontend/components/Lealtad/FormularioOferta.tsx
+11	Agregar botón eliminar	frontend/components/Lealtad/OfertaCard.tsx
+12	[YA COMPLETADO] Método eliminarOferta	frontend/features/lealtad/lealtadService.ts
+
+Orden de ejecución: 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 (12 ya está hecho)
+
+NOTA IMPORTANTE:
+Todos los prompts usan la herramienta `edit` con `oldString` y `newString` explícitos.
+NO uses la herramienta `write` que sobrescribe todo el archivo.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -140,9 +140,100 @@ La paleta completa con todas las tonalidades (lime, emerald, sky, tan, lavender,
 - [ ] Implementar rate limiting en middlewares de `main.py`
 - [ ] Revisar opción de `ignore scripts` para seguridad (npm)
 
+### Mejora UX — Módulo Lealtad [COMPLETADO]
+
+**Objetivo:** Mejorar la experiencia de usuario del módulo de lealtad, corrigiendo bugs críticos y haciendo la interfaz más intuitiva.
+
+**Fases completadas:**
+- **Fase 1:** Selector de Productos/Servicios — Dropdown con catálogo completo (productos + servicios)
+- **Fase 2:** Corrección de Bugs — Botón pausar/activar, validación de rangos, confirmación de eliminación
+- **Fase 3:** Mejoras UX — Preview de oferta, mensajes de error específicos, indicadores visuales
+- **Fase 4:** Visualización de reglas NxN — Mostrar nombre de producto/servicio en requisitos y recompensas
+
+**Cambios técnicos:**
+- Nuevo endpoint: `GET /api/lealtad/negocios/{id}/catalogo-disponible` (retorna productos Y servicios)
+- Schema `OfertaReglaResponse` ahora incluye `nombre_servicio_disponible` y `tipo_servicio_disponible`
+- Dashboard serializa nombre y tipo de producto/servicio en reglas NxN
+
+### Refactorización Completa — Módulo Lealtad v2 [COMPLETADO — HOY]
+
+**Objetivo:** Refactorizar todo el dominio de Lealtad para soportar reglas NxN multi-producto, multi-sucursal, comentarios con arco exclusivo, configuración de lealtad, y seed data realista con 5 negocios.
+
+**Backend — Modelos (`backend/lealtad/models.py`):**
+- Nueva tabla `ofertas_reglas_servicios` — Tabla intermedia que conecta una regla con múltiples productos/servicios (reemplaza la FK directa `id_servicio_disponible` en `ofertas_reglas`)
+- Relationships bidireccionales agregadas a todos los modelos (`back_populates`)
+- Docstrings detallados en cada clase modelo
+- Nuevo modelo `OfertaReglaServicio` con atributos: `cantidad`, `porcentaje_descuento`, `monto_descuento`, `monto_minimo`
+
+**Backend — Schemas (`backend/lealtad/schemas.py`):**
+- Nuevos schemas: `OfertaReglaCreate`, `OfertaReglaResponse`, `OfertaResponse`, `PublicacionResponse`, `ComentarioResponse`, `ConfiguracionLealtadResponse`, `ConfiguracionLealtadUpdate`, `ComentarioCreate`
+- `OfertaCreate` ahora acepta `reglas: List[OfertaReglaCreate]` e `id_sucursales: Optional[List[int]]` (None = todas las sucursales)
+- `ComentarioCreate` incluye validador `model_validator` para arco exclusivo (Publicación O Oferta)
+- `OfertaResponse` incluye `nombre_sucursal`, `total_canjes`, `stock_restante`, `reglas`
+- Migración de `root_validator` a `model_validator` (Pydantic v2)
+- Docstrings en todos los schemas
+
+**Backend — Router (`backend/lealtad/router.py`):**
+- Nuevos endpoints:
+  - `GET /negocios/{id}/catalogo-disponible` — Catálogo para reglas de ofertas
+  - `GET /negocios/{id}/consumidores-afiliados` — Consumidores con cartera de lealtad
+  - `GET /negocios/{id}/sucursales` — Sucursales del negocio
+  - `POST /comentarios` — Crear comentario (arco exclusivo)
+  - `GET /publicaciones/{id}/comentarios` — Comentarios de publicación
+  - `GET /ofertas/{id}/comentarios` — Comentarios de oferta
+  - `DELETE /comentarios/{id}` — Ocultar comentario (soft delete)
+  - `GET /negocios/{id}/configuracion-lealtad` — Obtener reglas de lealtad
+  - `PUT /negocios/{id}/configuracion-lealtad` — Actualizar reglas de lealtad
+- Endpoints reorganizados por sección: Dashboard, Catálogo, Ofertas, Publicaciones, Comentarios, Configuración, QR
+- `validar_acceso_negocio()` ahora se llama explícitamente en router (antes implícito en service)
+- Docstrings en todos los endpoints
+
+**Backend — Service (`backend/lealtad/service.py`):**
+- Nueva función `validar_acceso_negocio()` — Verifica que usuario sea dueño o empleado del negocio
+- Nueva función `obtener_catalogo_disponible_negocio()` — Retorna productos + servicios del negocio
+- Nueva función `obtener_consumidores_afiliados()` — Consumidores con cartera de lealtad, ordenados alfabéticamente
+- Nueva función `obtener_sucursales_negocio()` — Sucursales del negocio para selectores
+- Nueva función `verificar_y_pausar_ofertas_agotadas()` — Observer pattern: pausa ofertas con stock = 0
+- `crear_oferta_negocio()` ahora soporta multi-sucursal (replica oferta en N sucursales) y crea reglas NxN
+- `actualizar_oferta()` valida que no se active una oferta sin stock
+- Dashboard ahora incluye reglas serializadas con nombre de producto/servicio, nombre de sucursal, total_canjes, stock_restante
+- Secrets movidos a `config.py` (`QR_SECRET_KEY`, `ALGORITHM`, `QR_EXPIRATION_MINUTES`)
+- Docstrings detallados en todas las funciones
+
+**Backend — Config (`backend/lealtad/config.py`) [NUEVO ARCHIVO]:**
+- Centraliza configuración de QR: `QR_SECRET_KEY`, `ALGORITHM`, `QR_EXPIRATION_MINUTES`
+
+**Backend — Seed Data (`backend/datosprueba_BD.py`):**
+- Expandido de 2 a **5 negocios**: Cafetería El Grano (Premium, 3 sucursales), Barbería Classic (Gratis, 2 sucursales), Spa Relajación Total (Premium, 2 sucursales), Gimnasio PowerFit (Gratis, 1 sucursal), Restaurante La Casa (Premium, 2 sucursales)
+- **10 consumidores** de prueba (cons1–cons10) con correos realistas
+- **5 dueños** (dueno1–dueno5) y **3 empleados** (emp1–emp3)
+- **10 sucursales** con calificaciones y reseñas
+- **15+ productos/servicios**: Capuchino, Latte, Americano, Croissant, Pastel, Corte, Barba, Masaje, Facial, Membresía, etc.
+- **5 materiales**: Café, Leche, Pan, Champú, Aceite para masaje
+- **5 cajas físicas** y **3 sesiones de caja** activas
+- **5 transacciones** con detalles
+- **4 citas** (programadas y finalizada)
+- Suscripción **Premium** agregada (límites ampliados: 10 soluciones, 5 sucursales, 50 empleados, 1000 consumidores, 500 productos)
+- Solución **Catálogo** agregada al App Store
+
+**Base de datos (`arquitectura_db.dbml`):**
+- Nueva tabla `Ofertas_Reglas_Servicios` con FK a `Ofertas_Reglas` y `Servicios_Disponibles`
+- `monto_minimo` ahora tiene nota: "Solo para requisitos"
+
+**Frontend — Componentes de Lealtad:**
+- `FormularioOferta.tsx` — Refactorizado para soportar reglas NxN multi-producto, selector de sucursales múltiples, preview de oferta
+- `FormularioPublicacion.tsx` — Actualizado para vincular ofertas y manejar estado
+- `WorkspaceOferta.tsx` — Dashboard mejorado con métricas de canjes, stock restante, estado de ofertas
+- `WorkspacePublicacion.tsx` — Feed con comentarios y gestión de publicaciones
+- `WorkspaceCalificacion.tsx` — Gestión de reseñas y calificaciones
+- `OfertaCard.tsx` — Card con info de sucursal, stock, canjes
+- `BuscadorUsuarios.tsx` — Búsqueda de consumidores para whitelist VIP
+- `lealtadService.ts` — Nuevos métodos: `obtenerCatalogoDisponible`, `obtenerConsumidoresAfiliados`, `obtenerSucursales`, `crearComentario`, `obtenerComentarios`, `ocultarComentario`, `obtenerConfiguracionLealtad`, `actualizarConfiguracionLealtad`
+
 ## Notas Importantes
 
 - **Cuentas de prueba:** `admin1@circle.com` (admin), `carlos@negocio.com` (dueño). Todas las contraseñas de prueba: `123`
+- **Cuentas adicionales:** `dueno1@negocio.com` a `dueno5@negocio.com`, `emp1@negocio.com` a `emp3@negocio.com`, `juan@gmail.com` (cons1) a `sofia.vargas@gmail.com` (cons10)
 - **Carpeta Tools/:** Contiene solo assets de diseño (mockups, paletas). Excluir del análisis de código.
 - **Dimensiones de imágenes:** Relación 9:16 (vertical), 1080x1920px para slideshow de login.
 - **Puerto PostgreSQL:** 5432
@@ -168,7 +259,7 @@ El proyecto utiliza dos modelos de IA con responsabilidades diferenciadas:
 
 ## Agent Skills
 
-El proyecto utiliza **Agent Skills** instaladas en `.agents/skills/` para mejorar la calidad del código generado. Las skills son instrucciones especializadas que se cargan bajo demanda según el contexto de la tarea.
+El proyecto utiliza **Agent Skills** instaladas en `.opencode/skills/` para mejorar la calidad del código generado. Las skills son instrucciones especializadas que se cargan bajo demanda según el contexto de la tarea.
 
 ### Skills Instaladas
 
@@ -184,9 +275,65 @@ El proyecto utiliza **Agent Skills** instaladas en `.agents/skills/` para mejora
 
 ### Cómo Funcionan
 
-Las skills se descubren automáticamente desde `.agents/skills/<nombre>/SKILL.md`. Cada skill tiene:
+Las skills se descubren automáticamente desde `.opencode/skills/<nombre>/SKILL.md`. Cada skill tiene:
 - **Metadata** (siempre cargada): nombre y descripción para que el agente sepa cuándo usarla
 - **Instrucciones** (cargadas bajo demanda): guía detallada que se inyecta al contexto cuando la tarea lo requiere
 - **Referencias** (cargadas según necesidad): archivos adicionales con ejemplos y patrones
 
-Las skills aplican principios de **progressive disclosure** — solo consumen tokens del contexto cuando son relevantes para la tarea actual.
+las skills aplican principios de **progressive disclosure** — solo consumen tokens del contexto cuando son relevantes para la tarea actual.
+
+## Modelo Local (Ollama + Qwen3)
+
+El proyecto está configurado para usar **Qwen3:8b** localmente vía Ollama, proporcionando inferencia gratuita e ilimitada para tareas de desarrollo.
+
+### Configuración
+
+**Archivos:**
+- `opencode.json` — Configuración de OpenCode con provider Ollama
+- `Modelfile` — Parámetros optimizados del modelo (contexto 64K, output 16K)
+
+**Requisitos:**
+- Ollama instalado (`winget install Ollama.Ollama`)
+- Modelo base: `ollama pull qwen3:8b` (5.2GB)
+- Modelo optimizado: `ollama create qwen3:8b-optimized -f Modelfile`
+
+### Cuándo Usar Cada Modelo
+
+| Modelo | Uso Recomendado | Costo |
+|---|---|---|
+| **Qwen3:8b-optimized (local)** | Edición de código diaria, bugs simples, documentación, iteración rápida | Gratis, ilimitado |
+| **Qwen 3.7 Max (Go/Zen)** | Arquitectura compleja, debugging difícil, decisiones críticas | $2.50/1M input, $7.50/1M output |
+
+### Cambiar Entre Modelos
+
+En OpenCode, usa el comando `/models` para seleccionar:
+- `Qwen3 8B Optimized (local)` — Modelo local
+- `opencode-go/qwen3.7-max` — Modelo cloud
+
+### Comandos Útiles
+
+```bash
+# Verificar que Ollama está corriendo
+ollama list
+
+# Reiniciar Ollama si falla
+# Windows: Cierra Ollama del system tray y vuelve a abrirlo
+# O desde terminal:
+ollama serve
+
+# Ver logs de Ollama (debugging)
+# Windows: %LOCALAPPDATA%\Ollama\logs\
+```
+
+### Limitaciones del Modelo Local
+
+- **~60-65% de la potencia** de Qwen 3.7 Max en programación
+- **Contexto de 64K tokens** (vs 66K+ del cloud)
+- **Mejor para:** Tareas repetitivas, boilerplate, documentación, ediciones pequeñas
+- **Evitar para:** Refactorizaciones complejas, decisiones arquitectónicas críticas
+
+### Hardware Requerido
+
+- **GPU:** RTX 5070 (12GB VRAM) o superior
+- **VRAM usada:** ~5.2GB (modelo) + ~5.5GB (contexto KV cache 64K) = ~10.7GB
+- **Velocidad:** ~25-35 tokens/segundo (depende de la GPU)
