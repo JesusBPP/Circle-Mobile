@@ -51,7 +51,8 @@ class Cita(Base):
 class CitaServicio(Base):
     __tablename__ = "citas_servicios"
     id_cita = Column(Integer, ForeignKey("citas.id"), primary_key=True, nullable=False)
-    id_servicio_producto = Column(Integer, ForeignKey("servicios_productos.id"), primary_key=True, nullable=False)
+    id_servicio_disponible = Column(Integer, ForeignKey("servicios_disponibles.id"), primary_key=True, nullable=False)
+    costo_actual = Column(Numeric(10, 2), nullable=False)
 
 
 class ArchivoCita(Base):

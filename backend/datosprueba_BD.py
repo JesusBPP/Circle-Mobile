@@ -281,10 +281,10 @@ def llenar_base_datos():
         db.add_all([cita1, cita2, cita3, cita4, cita5, cita6, cita7])
         db.commit()
         
-        db.add(agenda_models.CitaServicio(id_cita=cita1.id, id_servicio_disponible=disp_reserva_centro.id))
-        db.add(agenda_models.CitaServicio(id_cita=cita2.id, id_servicio_disponible=disp_corte_norte.id))
-        db.add(agenda_models.CitaServicio(id_cita=cita3.id, id_servicio_disponible=disp_masaje_polanco.id))
-        db.add(agenda_models.CitaServicio(id_cita=cita4.id, id_servicio_disponible=disp_cafe_centro.id))
+        db.add(agenda_models.CitaServicio(id_cita=cita1.id, id_servicio_disponible=disp_reserva_centro.id, costo_actual=100.00))
+        db.add(agenda_models.CitaServicio(id_cita=cita2.id, id_servicio_disponible=disp_corte_norte.id, costo_actual=250.00))
+        db.add(agenda_models.CitaServicio(id_cita=cita3.id, id_servicio_disponible=disp_masaje_polanco.id, costo_actual=800.00))
+        db.add(agenda_models.CitaServicio(id_cita=cita4.id, id_servicio_disponible=disp_cafe_centro.id, costo_actual=65.00))
         
         db.add(agenda_models.CitaConsumidor(id_cita=cita1.id, id_usuario_consumidor=cons1.id))
         db.add(agenda_models.CitaConsumidor(id_cita=cita2.id, id_usuario_consumidor=cons4.id))

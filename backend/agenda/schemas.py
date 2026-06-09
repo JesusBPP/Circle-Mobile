@@ -43,7 +43,7 @@ class CitaBase(BaseModel):
     estado: str = "Programada" 
 
 class CitaCreate(CitaBase):
-    id_servicio_producto: Optional[int] = None
+    id_servicio_disponible: Optional[int] = None
     id_usuario_consumidor: Optional[int] = None
 
 class CitaUpdate(BaseModel):

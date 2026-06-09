@@ -96,13 +96,21 @@ def obtener_citas_negocio(id_negocio: int, db: Session = Depends(get_db)):
 def crear_cita(id_negocio: int, cita: agenda_schemas.CitaCreate, db: Session = Depends(get_db)):
     validar_empalme_citas(db, cita.id_sucursal, cita.fecha_hora_inicio, cita.fecha_hora_fin)
         
-    datos_cita = cita.model_dump(exclude={"id_servicio_producto", "id_usuario_consumidor"})
+    datos_cita = cita.model_dump(exclude={"id_servicio_disponible", "id_usuario_consumidor"})
     nueva_cita = agenda_models.Cita(**datos_cita)
     db.add(nueva_cita)
     db.flush() 
     
-    if cita.id_servicio_producto:
-        db.add(agenda_models.CitaServicio(id_cita=nueva_cita.id, id_servicio_producto=cita.id_servicio_producto))
+    if cita.id_servicio_disponible:
+        servicio_disp = db.query(catalogo_models.ServicioDisponible).filter(
+            catalogo_models.ServicioDisponible.id == cita.id_servicio_disponible
+        ).first()
+        costo = servicio_disp.servicio_producto.costo if servicio_disp else 0
+        db.add(agenda_models.CitaServicio(
+            id_cita=nueva_cita.id,
+            id_servicio_disponible=cita.id_servicio_disponible,
+            costo_actual=costo
+        ))
         
     if cita.id_usuario_consumidor:
         db.add(agenda_models.CitaConsumidor(id_cita=nueva_cita.id, id_usuario_consumidor=cita.id_usuario_consumidor))
