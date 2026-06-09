@@ -279,25 +279,34 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
         <Text style={styles.label}>Descripción / Términos</Text>
         <TextInput style={[styles.input, styles.textArea]} value={descripcion} onChangeText={setDescripcion} multiline numberOfLines={3} placeholder="Explica las reglas..." placeholderTextColor="#94a3b8" />
 
-        <View style={styles.row}>
-          <View style={styles.flexItem}>
-            <Text style={styles.label}>Válida Desde <Text style={styles.required}>*</Text></Text>
-            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickerInicio(true)}>
-              <Ionicons name="calendar-outline" size={16} color="#475569" />
-              <Text style={styles.dateText}>{formatDateStr(fechaInicio)}</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.flexItem}>
-            <Text style={styles.label}>Válida Hasta <Text style={styles.required}>*</Text></Text>
-            <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickerFin(true)}>
-              <Ionicons name="calendar-outline" size={16} color="#475569" />
-              <Text style={styles.dateText}>{formatDateStr(fechaFin)}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        {limiteStock === '' || parseInt(limiteStock) === 0 ? (
+          <>
+            <View style={styles.row}>
+              <View style={styles.flexItem}>
+                <Text style={styles.label}>Válida Desde <Text style={styles.required}>*</Text></Text>
+                <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickerInicio(true)}>
+                  <Ionicons name="calendar-outline" size={16} color="#475569" />
+                  <Text style={styles.dateText}>{formatDateStr(fechaInicio)}</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.flexItem}>
+                <Text style={styles.label}>Válida Hasta <Text style={styles.required}>*</Text></Text>
+                <TouchableOpacity style={styles.dateBtn} onPress={() => setShowPickerFin(true)}>
+                  <Ionicons name="calendar-outline" size={16} color="#475569" />
+                  <Text style={styles.dateText}>{formatDateStr(fechaFin)}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
-        {showPickerInicio && (<DateTimePicker value={fechaInicio} mode="date" display="default" onChange={(e, d) => { setShowPickerInicio(Platform.OS === 'ios'); if (d) setFechaInicio(d); }}/>)}
-        {showPickerFin && (<DateTimePicker value={fechaFin} mode="date" display="default" onChange={(e, d) => { setShowPickerFin(Platform.OS === 'ios'); if (d) setFechaFin(d); }}/>)}
+            {showPickerInicio && (<DateTimePicker value={fechaInicio} mode="date" display="default" onChange={(e, d) => { setShowPickerInicio(Platform.OS === 'ios'); if (d) setFechaInicio(d); }}/>)}
+            {showPickerFin && (<DateTimePicker value={fechaFin} mode="date" display="default" onChange={(e, d) => { setShowPickerFin(Platform.OS === 'ios'); if (d) setFechaFin(d); }}/>)}
+          </>
+        ) : (
+          <View style={styles.infoBox}>
+            <Ionicons name="information-circle" size={20} color="#3b82f6" />
+            <Text style={styles.infoText}>Esta oferta caducará automáticamente cuando se agote el stock.</Text>
+          </View>
+        )}
 
         <View style={styles.row}>
           <View style={styles.flexItem}>

@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import lealtadService from '../../features/lealtad/lealtadService';
 
 // 🌟 Tipado estricto alineado con el payload del Backend (Feed Items)
 export interface OfertaFeedItem {
@@ -37,9 +38,10 @@ export interface OfertaFeedItem {
 interface OfertaCardProps {
   data: OfertaFeedItem; 
   onPress: () => void;
+  onEliminar?: () => void;
 }
 
-export default function OfertaCard({ data, onPress }: OfertaCardProps) {
+export default function OfertaCard({ data, onPress, onEliminar }: OfertaCardProps) {
   // Manejamos el estado en minúsculas por si la BD cambia de convención
   const isActiva = data.estado?.toLowerCase() === 'activa';
 
@@ -72,6 +74,34 @@ export default function OfertaCard({ data, onPress }: OfertaCardProps) {
             {data.limite_existencias !== null ? `${data.limite_existencias} disp.` : 'Ilimitado'}
           </Text>
         </View>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={(e) => {
+            e.stopPropagation();
+            Alert.alert(
+              'Eliminar Oferta',
+              '¿Estás seguro? Esta acción no se puede deshacer.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Eliminar',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await lealtadService.eliminarOferta(data.id_real);
+                      Alert.alert('Éxito', 'Oferta eliminada correctamente.');
+                      if (onEliminar) onEliminar();
+                    } catch (error: any) {
+                      Alert.alert('Error', error.message || 'No se pudo eliminar la oferta.');
+                    }
+                  }
+                }
+              ]
+            );
+          }}
+        >
+          <Ionicons name="trash-outline" size={20} color="#ef4444" />
+        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -92,5 +122,6 @@ const styles = StyleSheet.create({
   description: { fontSize: 14, color: '#64748b', lineHeight: 20, marginBottom: 15 },
   footer: { flexDirection: 'row', gap: 15 },
   statBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, gap: 6, borderWidth: 1, borderColor: '#e2e8f0' },
-  statText: { fontSize: 13, fontWeight: '600', color: '#475569' }
+  statText: { fontSize: 13, fontWeight: '600', color: '#475569' },
+  deleteButton: { marginLeft: 'auto', padding: 8 }
 });

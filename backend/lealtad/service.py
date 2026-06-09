@@ -254,7 +254,8 @@ def obtener_dashboard_negocio(db: Session, id_negocio: int):
     ]
 
     ofertas_db = db.query(models.Oferta).filter(
-        models.Oferta.id_sucursales.in_(id_sucursales)
+        models.Oferta.id_sucursales.in_(id_sucursales),
+        models.Oferta.estado != 'eliminada'
     ).all()
 
     publicaciones_db = db.query(models.Publicacion).filter(
@@ -270,30 +271,34 @@ def obtener_dashboard_negocio(db: Session, id_negocio: int):
 
         reglas_serializadas = []
         for r in reglas_lista:
-            nombre_servicio = None
-            tipo_servicio = None
-            if r.id_servicio_disponible:
+            servicios_regla = db.query(models.OfertaReglaServicio).filter(
+                models.OfertaReglaServicio.id_oferta_regla == r.id
+            ).all()
+
+            servicios_serializados = []
+            for s in servicios_regla:
                 disponible = db.query(catalogo_models.ServicioDisponible).filter(
-                    catalogo_models.ServicioDisponible.id == r.id_servicio_disponible
+                    catalogo_models.ServicioDisponible.id == s.id_servicio_disponible
                 ).first()
                 if disponible:
                     producto = db.query(catalogo_models.ServicioProducto).filter(
                         catalogo_models.ServicioProducto.id == disponible.id_servicio_producto
                     ).first()
-                    if producto:
-                        nombre_servicio = producto.nombre
-                        tipo_servicio = producto.tipo_producto
+                    servicios_serializados.append({
+                        "id": s.id,
+                        "id_servicio_disponible": s.id_servicio_disponible,
+                        "nombre_servicio": producto.nombre if producto else None,
+                        "tipo_servicio": producto.tipo_producto if producto else None,
+                        "cantidad": s.cantidad,
+                        "porcentaje_descuento": float(s.porcentaje_descuento) if s.porcentaje_descuento else None,
+                        "monto_descuento": float(s.monto_descuento) if s.monto_descuento else None,
+                        "monto_minimo": float(s.monto_minimo) if s.monto_minimo else None,
+                    })
 
             reglas_serializadas.append({
                 "id": r.id,
                 "tipo_regla": r.tipo_regla,
-                "id_servicio_disponible": r.id_servicio_disponible,
-                "nombre_servicio_disponible": nombre_servicio,
-                "tipo_servicio_disponible": tipo_servicio,
-                "cantidad": r.cantidad,
-                "porcentaje_descuento": float(r.porcentaje_descuento) if r.porcentaje_descuento else None,
-                "monto_descuento": float(r.monto_descuento) if r.monto_descuento else None,
-                "monto_minimo": float(r.monto_minimo) if r.monto_minimo else None,
+                "servicios": servicios_serializados,
             })
 
         # NUEVO: Obtener nombre de sucursal
@@ -405,19 +410,25 @@ def crear_oferta_negocio(db: Session, id_negocio: int, oferta: schemas.OfertaCre
             db.flush()
 
             if oferta.reglas:
-                reglas_db = [
-                    models.OfertaRegla(
+                for regla in oferta.reglas:
+                    nueva_regla = models.OfertaRegla(
                         id_oferta=nueva_oferta.id,
                         tipo_regla=regla.tipo_regla,
-                        id_servicio_disponible=regla.id_servicio_disponible,
-                        cantidad=regla.cantidad,
-                        porcentaje_descuento=regla.porcentaje_descuento,
-                        monto_descuento=regla.monto_descuento,
-                        monto_minimo=regla.monto_minimo,
                     )
-                    for regla in oferta.reglas
-                ]
-                db.add_all(reglas_db)
+                    db.add(nueva_regla)
+                    db.flush()
+
+                    if regla.servicios:
+                        for servicio in regla.servicios:
+                            nuevo_servicio = models.OfertaReglaServicio(
+                                id_oferta_regla=nueva_regla.id,
+                                id_servicio_disponible=servicio.id_servicio_disponible,
+                                cantidad=servicio.cantidad,
+                                porcentaje_descuento=servicio.porcentaje_descuento,
+                                monto_descuento=servicio.monto_descuento,
+                                monto_minimo=servicio.monto_minimo if regla.tipo_regla == 'requisito' else None,
+                            )
+                            db.add(nuevo_servicio)
 
             if not oferta.es_publica and oferta.whitelist_ids:
                 whitelist_records = [
@@ -471,26 +482,12 @@ def actualizar_oferta(db: Session, id_oferta: int, datos: schemas.OfertaUpdate):
 
 
 def eliminar_oferta(db: Session, id_oferta: int):
-    """Elimina permanentemente una oferta solo si no tiene canjes registrados."""
+    """Elimina lógicamente una oferta (estado = 'eliminada')."""
     oferta = db.query(models.Oferta).filter(models.Oferta.id == id_oferta).first()
     if not oferta:
         raise HTTPException(status_code=404, detail="Oferta no encontrada.")
 
-    usos = db.query(models.HistorialUsoOferta).filter(
-        models.HistorialUsoOferta.id_oferta == id_oferta
-    ).count()
-
-    if usos > 0:
-        raise HTTPException(
-            status_code=400,
-            detail="No puedes eliminar una oferta que ya ha sido canjeada por clientes. Si deseas detenerla, cambia su estado a 'pausada'."
-        )
-
-    db.query(models.OfertaWhitelist).filter(models.OfertaWhitelist.id_oferta == id_oferta).delete()
-    db.query(models.OfertaRegla).filter(models.OfertaRegla.id_oferta == id_oferta).delete()
-    db.query(models.Comentario).filter(models.Comentario.id_oferta == id_oferta).delete()
-
-    db.delete(oferta)
+    oferta.estado = 'eliminada'
     db.commit()
     return {"mensaje": "Oferta eliminada correctamente."}
 

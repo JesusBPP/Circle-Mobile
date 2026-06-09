@@ -115,16 +115,16 @@ def llenar_base_datos():
         db.commit()
 
         print("📲 Instalando Soluciones...")
-        db.add(negocios_models.NegocioSolucion(id_negocio=negocio1.id, id_solucion=solucion_agenda.id, esta_activa=True))
-        db.add(negocios_models.NegocioSolucion(id_negocio=negocio1.id, id_solucion=solucion_lealtad.id, esta_activa=True))
-        db.add(negocios_models.NegocioSolucion(id_negocio=negocio1.id, id_solucion=solucion_catalogo.id, esta_activa=True))
-        db.add(negocios_models.NegocioSolucion(id_negocio=negocio2.id, id_solucion=solucion_agenda.id, esta_activa=True))
-        db.add(negocios_models.NegocioSolucion(id_negocio=negocio2.id, id_solucion=solucion_lealtad.id, esta_activa=True))
-        db.add(negocios_models.NegocioSolucion(id_negocio=negocio3.id, id_solucion=solucion_agenda.id, esta_activa=True))
-        db.add(negocios_models.NegocioSolucion(id_negocio=negocio3.id, id_solucion=solucion_lealtad.id, esta_activa=True))
-        db.add(negocios_models.NegocioSolucion(id_negocio=negocio4.id, id_solucion=solucion_agenda.id, esta_activa=True))
-        db.add(negocios_models.NegocioSolucion(id_negocio=negocio5.id, id_solucion=solucion_agenda.id, esta_activa=True))
-        db.add(negocios_models.NegocioSolucion(id_negocio=negocio5.id, id_solucion=solucion_lealtad.id, esta_activa=True))
+        db.add(negocios_models.NegocioSolucion(id_negocio=negocio1.id, id_solucion=solucion_agenda.id, esta_activa=True, fecha_instalacion=datetime.utcnow()))
+        db.add(negocios_models.NegocioSolucion(id_negocio=negocio1.id, id_solucion=solucion_lealtad.id, esta_activa=True, fecha_instalacion=datetime.utcnow()))
+        db.add(negocios_models.NegocioSolucion(id_negocio=negocio1.id, id_solucion=solucion_catalogo.id, esta_activa=True, fecha_instalacion=datetime.utcnow()))
+        db.add(negocios_models.NegocioSolucion(id_negocio=negocio2.id, id_solucion=solucion_agenda.id, esta_activa=True, fecha_instalacion=datetime.utcnow()))
+        db.add(negocios_models.NegocioSolucion(id_negocio=negocio2.id, id_solucion=solucion_lealtad.id, esta_activa=True, fecha_instalacion=datetime.utcnow()))
+        db.add(negocios_models.NegocioSolucion(id_negocio=negocio3.id, id_solucion=solucion_agenda.id, esta_activa=True, fecha_instalacion=datetime.utcnow()))
+        db.add(negocios_models.NegocioSolucion(id_negocio=negocio3.id, id_solucion=solucion_lealtad.id, esta_activa=True, fecha_instalacion=datetime.utcnow()))
+        db.add(negocios_models.NegocioSolucion(id_negocio=negocio4.id, id_solucion=solucion_agenda.id, esta_activa=True, fecha_instalacion=datetime.utcnow()))
+        db.add(negocios_models.NegocioSolucion(id_negocio=negocio5.id, id_solucion=solucion_agenda.id, esta_activa=True, fecha_instalacion=datetime.utcnow()))
+        db.add(negocios_models.NegocioSolucion(id_negocio=negocio5.id, id_solucion=solucion_lealtad.id, esta_activa=True, fecha_instalacion=datetime.utcnow()))
         db.commit()
 
         print("📦 Creando Catálogo Unificado y Disponibilidad...")
@@ -248,6 +248,20 @@ def llenar_base_datos():
         db.add(finanzas_models.DetalleTransaccion(id_transaccion=trans5.id, id_servicios_productos_disponibles=disp_corte_barba_norte.id, cantidad=1, subtotal=380.00))
         db.commit()
 
+        print("💰 Registrando Movimientos Manuales de Efectivo...")
+        mov_ingreso1 = finanzas_models.MovimientoEfectivo(id_sesion_caja=sesion_emp1.id, tipo_movimiento="ingreso", monto=500.00, concepto="Venta de merchandise", fecha=datetime.utcnow())
+        mov_egreso1 = finanzas_models.MovimientoEfectivo(id_sesion_caja=sesion_emp1.id, tipo_movimiento="egreso", monto=200.00, concepto="Pago proveedor de agua", fecha=datetime.utcnow())
+        mov_ingreso2 = finanzas_models.MovimientoEfectivo(id_sesion_caja=sesion_emp2.id, tipo_movimiento="ingreso", monto=150.00, concepto="Propina extra", fecha=datetime.utcnow())
+        db.add_all([mov_ingreso1, mov_egreso1, mov_ingreso2])
+        db.commit()
+
+        print("🔒 Cerrando Sesiones de Caja (con cuadratura y descuadre)...")
+        sesion_emp1.fecha_cierre = datetime.utcnow()
+        sesion_emp1.efectivo_contado_al_cierre = 1000.00
+        sesion_emp2.fecha_cierre = datetime.utcnow()
+        sesion_emp2.efectivo_contado_al_cierre = 120.00
+        db.commit()
+
         print("📅 Creando Citas y Agenda Whitelist...")
         hoy = datetime.utcnow()
         
@@ -261,13 +275,16 @@ def llenar_base_datos():
         cita2 = agenda_models.Cita(id_sucursal=sucursal_barber_norte.id, titulo="Corte Caballero", fecha_hora_inicio=hoy + timedelta(days=1, hours=3), fecha_hora_fin=hoy + timedelta(days=1, hours=4), numero_bloques=1, estado="programada")
         cita3 = agenda_models.Cita(id_sucursal=sucursal_spa.id, titulo="Masaje Relajante", fecha_hora_inicio=hoy + timedelta(days=3, hours=2), fecha_hora_fin=hoy + timedelta(days=3, hours=3), numero_bloques=1, estado="programada")
         cita4 = agenda_models.Cita(id_sucursal=sucursal_cafe_sur.id, titulo="Reserva Mesa 2", fecha_hora_inicio=hoy - timedelta(days=1), fecha_hora_fin=hoy - timedelta(days=1, hours=-1), numero_bloques=2, estado="finalizada")
-        db.add_all([cita1, cita2, cita3, cita4])
+        cita5 = agenda_models.Cita(id_sucursal=sucursal_cafe_centro.id, titulo="Cita Cancelada", fecha_hora_inicio=hoy + timedelta(days=5), fecha_hora_fin=hoy + timedelta(days=5, hours=1), numero_bloques=2, estado="cancelada")
+        cita6 = agenda_models.Cita(id_sucursal=sucursal_barber_centro.id, titulo="Cita Reagendada", fecha_hora_inicio=hoy + timedelta(days=7), fecha_hora_fin=hoy + timedelta(days=7, hours=1), numero_bloques=1, estado="reagenda")
+        cita7 = agenda_models.Cita(id_sucursal=sucursal_spa_coyoacan.id, titulo="Cita Completada", fecha_hora_inicio=hoy - timedelta(days=3), fecha_hora_fin=hoy - timedelta(days=3, hours=1), numero_bloques=1, estado="completada")
+        db.add_all([cita1, cita2, cita3, cita4, cita5, cita6, cita7])
         db.commit()
         
-        db.add(agenda_models.CitaServicio(id_cita=cita1.id, id_servicio_producto=serv_reserva.id))
-        db.add(agenda_models.CitaServicio(id_cita=cita2.id, id_servicio_producto=serv_corte.id))
-        db.add(agenda_models.CitaServicio(id_cita=cita3.id, id_servicio_producto=serv_masaje.id))
-        db.add(agenda_models.CitaServicio(id_cita=cita4.id, id_servicio_producto=prod_capuchino.id))
+        db.add(agenda_models.CitaServicio(id_cita=cita1.id, id_servicio_disponible=disp_reserva_centro.id))
+        db.add(agenda_models.CitaServicio(id_cita=cita2.id, id_servicio_disponible=disp_corte_norte.id))
+        db.add(agenda_models.CitaServicio(id_cita=cita3.id, id_servicio_disponible=disp_masaje_polanco.id))
+        db.add(agenda_models.CitaServicio(id_cita=cita4.id, id_servicio_disponible=disp_cafe_centro.id))
         
         db.add(agenda_models.CitaConsumidor(id_cita=cita1.id, id_usuario_consumidor=cons1.id))
         db.add(agenda_models.CitaConsumidor(id_cita=cita2.id, id_usuario_consumidor=cons4.id))
@@ -312,7 +329,10 @@ def llenar_base_datos():
         cartera8 = lealtad_models.CarteraLealtad(id_usuario_consumidor=cons8.id, id_negocio=negocio5.id, saldo_puntos=180.00, saldo_sellos=1)
         cartera9 = lealtad_models.CarteraLealtad(id_usuario_consumidor=cons9.id, id_negocio=negocio5.id, saldo_puntos=270.00, saldo_sellos=2)
         cartera10 = lealtad_models.CarteraLealtad(id_usuario_consumidor=cons10.id, id_negocio=negocio1.id, saldo_puntos=50.00, saldo_sellos=0)
-        db.add_all([cartera1, cartera2, cartera3, cartera4, cartera5, cartera6, cartera7, cartera8, cartera9, cartera10])
+        cartera11 = lealtad_models.CarteraLealtad(id_usuario_consumidor=cons1.id, id_negocio=negocio2.id, saldo_puntos=0.00, saldo_sellos=0)
+        cartera12 = lealtad_models.CarteraLealtad(id_usuario_consumidor=cons2.id, id_negocio=negocio3.id, saldo_puntos=450.00, saldo_sellos=2)
+        cartera13 = lealtad_models.CarteraLealtad(id_usuario_consumidor=cons3.id, id_negocio=negocio5.id, saldo_puntos=0.00, saldo_sellos=0)
+        db.add_all([cartera1, cartera2, cartera3, cartera4, cartera5, cartera6, cartera7, cartera8, cartera9, cartera10, cartera11, cartera12, cartera13])
         db.commit()
         
         db.add(lealtad_models.HistorialMovimientoLealtad(id_cartera=cartera1.id, id_transaccion=trans1.id, tipo_movimiento="acumulacion", monto_puntos=165.00, monto_sellos=1, descripcion="Acumulación por compra"))
@@ -331,7 +351,11 @@ def llenar_base_datos():
         oferta6 = lealtad_models.Oferta(id_sucursales=sucursal_spa.id, titulo="Masaje + Facial con 30% OFF", descripcion="Paquete de relajación total", es_publica=True, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=45))
         oferta7 = lealtad_models.Oferta(id_sucursales=sucursal_spa_coyoacan.id, titulo="Segunda visita 50% OFF", descripcion="Descuento en tu segunda visita del mes", es_publica=False, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=90))
         oferta8 = lealtad_models.Oferta(id_sucursales=sucursal_restaurante.id, titulo="Bebida gratis con platillo", descripcion="Bebida artesanal de cortesía al ordenar platillo del día", es_publica=True, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=30))
-        db.add_all([oferta1, oferta2, oferta3, oferta4, oferta5, oferta6, oferta7, oferta8])
+        oferta9 = lealtad_models.Oferta(id_sucursales=sucursal_cafe_norte.id, titulo="Pastel Limitado", descripcion="Solo 10 pasteles disponibles a precio especial", es_publica=True, estado="activa", limite_existencias=10, fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=15))
+        oferta10 = lealtad_models.Oferta(id_sucursales=sucursal_gym.id, titulo="Clase Premium por Puntos", descripcion="Canjea 500 puntos por una clase personalizada", es_publica=True, estado="activa", costo_en_puntos=500.00, fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=60))
+        oferta11 = lealtad_models.Oferta(id_sucursales=sucursal_restaurante_sur.id, titulo="Bienvenida Única", descripcion="Descuento exclusivo para nuevos clientes (uso único)", es_publica=True, estado="activa", limite_por_usuario=1, fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=90))
+        oferta12 = lealtad_models.Oferta(id_sucursales=sucursal_barber_norte.id, titulo="Oferta Eliminada", descripcion="Esta oferta fue eliminada (soft delete)", es_publica=True, estado="eliminada", fecha_inicio=hoy - timedelta(days=30), fecha_fin=hoy - timedelta(days=1))
+        db.add_all([oferta1, oferta2, oferta3, oferta4, oferta5, oferta6, oferta7, oferta8, oferta9, oferta10, oferta11, oferta12])
         db.commit()
         
         # OFERTA 1: Requisito: 1 Reserva → Recompensa: 50% descuento en Capuchino
@@ -400,6 +424,33 @@ def llenar_base_datos():
         db.commit()
         db.add(lealtad_models.OfertaReglaServicio(id_oferta_regla=regla8_req.id, id_servicio_disponible=disp_comida_rest.id, cantidad=1))
         db.add(lealtad_models.OfertaReglaServicio(id_oferta_regla=regla8_rec.id, id_servicio_disponible=disp_bebida_rest.id, cantidad=1, porcentaje_descuento=100.00))
+        
+        # OFERTA 9: Requisito: 1 Pastel con monto mínimo $100 → Recompensa: 25% descuento
+        regla9_req = lealtad_models.OfertaRegla(id_oferta=oferta9.id, tipo_regla="requisito")
+        regla9_rec = lealtad_models.OfertaRegla(id_oferta=oferta9.id, tipo_regla="recompensa")
+        db.add_all([regla9_req, regla9_rec])
+        db.commit()
+        db.add(lealtad_models.OfertaReglaServicio(id_oferta_regla=regla9_req.id, id_servicio_disponible=disp_pastel_norte.id, cantidad=1, monto_minimo=100.00))
+        db.add(lealtad_models.OfertaReglaServicio(id_oferta_regla=regla9_rec.id, id_servicio_disponible=disp_pastel_norte.id, cantidad=1, porcentaje_descuento=25.00))
+        
+        # OFERTA 10: Requisito: 1 Membresía → Recompensa: 1 Clase gratis (se compra con puntos)
+        regla10_req = lealtad_models.OfertaRegla(id_oferta=oferta10.id, tipo_regla="requisito")
+        regla10_rec = lealtad_models.OfertaRegla(id_oferta=oferta10.id, tipo_regla="recompensa")
+        db.add_all([regla10_req, regla10_rec])
+        db.commit()
+        db.add(lealtad_models.OfertaReglaServicio(id_oferta_regla=regla10_req.id, id_servicio_disponible=disp_membresia_gym.id, cantidad=1))
+        db.add(lealtad_models.OfertaReglaServicio(id_oferta_regla=regla10_rec.id, id_servicio_disponible=disp_clase_gym.id, cantidad=1, porcentaje_descuento=100.00))
+        
+        # OFERTA 11: Requisito: 1 Platillo + 1 Bebida con monto mínimo $200 → Recompensa: 15% descuento
+        regla11_req = lealtad_models.OfertaRegla(id_oferta=oferta11.id, tipo_regla="requisito")
+        regla11_rec = lealtad_models.OfertaRegla(id_oferta=oferta11.id, tipo_regla="recompensa")
+        db.add_all([regla11_req, regla11_rec])
+        db.commit()
+        db.add(lealtad_models.OfertaReglaServicio(id_oferta_regla=regla11_req.id, id_servicio_disponible=disp_comida_rest_sur.id, cantidad=1, monto_minimo=200.00))
+        db.add(lealtad_models.OfertaReglaServicio(id_oferta_regla=regla11_req.id, id_servicio_disponible=disp_bebida_rest_sur.id, cantidad=1))
+        db.add(lealtad_models.OfertaReglaServicio(id_oferta_regla=regla11_rec.id, id_servicio_disponible=disp_comida_rest_sur.id, cantidad=1, monto_descuento=15.00))
+        
+        # OFERTA 12: Oferta eliminada (soft delete) - sin reglas
         db.commit()
 
         db.add(lealtad_models.OfertaWhitelist(id_oferta=oferta1.id, id_usuario_consumidor=cons1.id))
@@ -410,6 +461,19 @@ def llenar_base_datos():
 
         db.add(lealtad_models.HistorialUsoOferta(id_oferta=oferta1.id, id_usuario_consumidor=cons1.id, id_transaccion=trans1.id, fecha_uso=datetime.utcnow()))
         db.add(lealtad_models.HistorialUsoOferta(id_oferta=oferta2.id, id_usuario_consumidor=cons2.id, id_transaccion=trans2.id, fecha_uso=datetime.utcnow()))
+        db.add(lealtad_models.HistorialUsoOferta(id_oferta=oferta9.id, id_usuario_consumidor=cons3.id, id_transaccion=trans3.id, fecha_uso=datetime.utcnow()))
+        db.add(lealtad_models.HistorialUsoOferta(id_oferta=oferta9.id, id_usuario_consumidor=cons4.id, id_transaccion=trans4.id, fecha_uso=datetime.utcnow()))
+        db.add(lealtad_models.HistorialUsoOferta(id_oferta=oferta9.id, id_usuario_consumidor=cons5.id, id_transaccion=trans5.id, fecha_uso=datetime.utcnow()))
+        db.commit()
+
+        print("💳 Creando Transacciones con Puntos y Métodos Mixtos...")
+        trans6 = finanzas_models.Transaccion(id_usuario_consumidor=cons6.id, id_sesion_caja=sesion_emp1.id, monto_total=0.00, metodo_pago="puntos", estado_pago="completado", fecha_transaccion=datetime.utcnow())
+        trans7 = finanzas_models.Transaccion(id_usuario_consumidor=cons7.id, id_sesion_caja=sesion_emp2.id, monto_total=250.00, metodo_pago="mixto", estado_pago="completado", fecha_transaccion=datetime.utcnow())
+        db.add_all([trans6, trans7])
+        db.commit()
+        
+        db.add(lealtad_models.HistorialMovimientoLealtad(id_cartera=cartera6.id, id_transaccion=trans6.id, tipo_movimiento="canje", monto_puntos=-500.00, monto_sellos=0, descripcion="Canje de puntos por Clase Premium"))
+        db.add(lealtad_models.HistorialMovimientoLealtad(id_cartera=cartera7.id, id_transaccion=trans7.id, tipo_movimiento="canje", monto_puntos=-250.00, monto_sellos=0, descripcion="Canje parcial con pago mixto"))
         db.commit()
 
         print("📱 Creando Feed de Publicaciones del Negocio...")
@@ -447,8 +511,13 @@ def llenar_base_datos():
         com18 = lealtad_models.Comentario(id_publicacion=None, id_oferta=oferta4.id, id_usuario_consumidor=cons4.id, texto_comentario="Excelente servicio, muy profesionales.", esta_oculto=False)
         com19 = lealtad_models.Comentario(id_publicacion=None, id_oferta=oferta6.id, id_usuario_consumidor=cons6.id, texto_comentario="El masaje fue increíble, muy relajante.", esta_oculto=False)
         com20 = lealtad_models.Comentario(id_publicacion=None, id_oferta=oferta8.id, id_usuario_consumidor=cons8.id, texto_comentario="La bebida de cortesía estaba deliciosa.", esta_oculto=False)
+        com21 = lealtad_models.Comentario(id_publicacion=None, id_oferta=oferta9.id, id_usuario_consumidor=cons3.id, texto_comentario="¡Qué buen descuento en pasteles!", esta_oculto=False)
+        com22 = lealtad_models.Comentario(id_publicacion=None, id_oferta=oferta9.id, id_usuario_consumidor=cons5.id, texto_comentario="Solo quedan 7 pasteles, ¡aprovechen!", esta_oculto=False)
+        com23 = lealtad_models.Comentario(id_publicacion=None, id_oferta=oferta10.id, id_usuario_consumidor=cons6.id, texto_comentario="Canjeé mis puntos por la clase, ¡excelente!", esta_oculto=False)
+        com24 = lealtad_models.Comentario(id_publicacion=None, id_oferta=oferta11.id, id_usuario_consumidor=cons8.id, texto_comentario="Descuento de bienvenida muy generoso.", esta_oculto=False)
+        com25 = lealtad_models.Comentario(id_publicacion=None, id_oferta=oferta11.id, id_usuario_consumidor=cons9.id, texto_comentario="¿Aplica para clientes recurrentes también?", esta_oculto=False)
         
-        db.add_all([com1, com2, com3, com4, com5, com6, com7, com8, com9, com10, com11, com12, com13, com14, com15, com16, com17, com18, com19, com20])
+        db.add_all([com1, com2, com3, com4, com5, com6, com7, com8, com9, com10, com11, com12, com13, com14, com15, com16, com17, com18, com19, com20, com21, com22, com23, com24, com25])
         db.commit()
 
         print("✅ ¡Base de datos rellenada al 100% en todos sus dominios!")

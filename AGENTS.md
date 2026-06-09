@@ -194,9 +194,13 @@ La paleta completa con todas las tonalidades (lime, emerald, sky, tan, lavender,
 - Nueva función `obtener_consumidores_afiliados()` — Consumidores con cartera de lealtad, ordenados alfabéticamente
 - Nueva función `obtener_sucursales_negocio()` — Sucursales del negocio para selectores
 - Nueva función `verificar_y_pausar_ofertas_agotadas()` — Observer pattern: pausa ofertas con stock = 0
-- `crear_oferta_negocio()` ahora soporta multi-sucursal (replica oferta en N sucursales) y crea reglas NxN
+- `crear_oferta_negocio()` ahora soporta multi-sucursal (replica oferta en N sucursales) y crea reglas NxN usando tabla intermedia `OfertaReglaServicio`
+- `crear_oferta_negocio()` ahora itera sobre `regla.servicios` para crear múltiples `OfertaReglaServicio` por regla
+- `obtener_dashboard_negocio()` ahora serializa múltiples servicios por regla desde tabla intermedia (lista `servicios` en cada regla)
+- `obtener_dashboard_negocio()` ahora filtra ofertas con estado='eliminada' (soft delete)
+- `eliminar_oferta()` ahora hace soft delete (cambia estado a 'eliminada') en lugar de hard delete
 - `actualizar_oferta()` valida que no se active una oferta sin stock
-- Dashboard ahora incluye reglas serializadas con nombre de producto/servicio, nombre de sucursal, total_canjes, stock_restante
+- Dashboard ahora incluye reglas serializadas con lista de servicios, nombre de sucursal, total_canjes, stock_restante
 - Secrets movidos a `config.py` (`QR_SECRET_KEY`, `ALGORITHM`, `QR_EXPIRATION_MINUTES`)
 - Docstrings detallados en todas las funciones
 
@@ -221,14 +225,25 @@ La paleta completa con todas las tonalidades (lime, emerald, sky, tan, lavender,
 - `monto_minimo` ahora tiene nota: "Solo para requisitos"
 
 **Frontend — Componentes de Lealtad:**
-- `FormularioOferta.tsx` — Refactorizado para soportar reglas NxN multi-producto, selector de sucursales múltiples, preview de oferta
+- `FormularioOferta.tsx` — Refactorizado para soportar reglas NxN multi-producto, selector de sucursales múltiples, preview de oferta. Campos de fechas condicionados: solo se muestran si no hay límite de stock (mutual exclusivity con `limite_existencias`)
 - `FormularioPublicacion.tsx` — Actualizado para vincular ofertas y manejar estado
 - `WorkspaceOferta.tsx` — Dashboard mejorado con métricas de canjes, stock restante, estado de ofertas
 - `WorkspacePublicacion.tsx` — Feed con comentarios y gestión de publicaciones
 - `WorkspaceCalificacion.tsx` — Gestión de reseñas y calificaciones
-- `OfertaCard.tsx` — Card con info de sucursal, stock, canjes
+- `OfertaCard.tsx` — Card con info de sucursal, stock, canjes. Botón de eliminar con confirmación y llamada a `lealtadService.eliminarOferta()`
 - `BuscadorUsuarios.tsx` — Búsqueda de consumidores para whitelist VIP
-- `lealtadService.ts` — Nuevos métodos: `obtenerCatalogoDisponible`, `obtenerConsumidoresAfiliados`, `obtenerSucursales`, `crearComentario`, `obtenerComentarios`, `ocultarComentario`, `obtenerConfiguracionLealtad`, `actualizarConfiguracionLealtad`
+- `lealtadService.ts` — Nuevos métodos: `obtenerCatalogoDisponible`, `obtenerConsumidoresAfiliados`, `obtenerSucursales`, `crearComentario`, `obtenerComentarios`, `ocultarComentario`, `obtenerConfiguracionLealtad`, `actualizarConfiguracionLealtad`, `eliminarOferta`
+
+**Completado Hoy — Backend Service (Prompts 6-9):**
+- `crear_oferta_negocio()` adaptado para crear múltiples `OfertaReglaServicio` por regla usando tabla intermedia
+- `obtener_dashboard_negocio()` adaptado para serializar lista de servicios por regla desde tabla intermedia
+- `eliminar_oferta()` cambiado de hard delete a soft delete (estado = 'eliminada')
+- `obtener_dashboard_negocio()` ahora filtra ofertas con estado='eliminada'
+
+**Completado Hoy — Frontend (Prompts 10-11):**
+- `FormularioOferta.tsx` — Campos de fechas condicionados: solo visibles cuando `limiteStock` está vacío o es 0
+- `OfertaCard.tsx` — Agregado botón de eliminar (ícono basura rojo) con confirmación Alert y callback `onEliminar`
+- `OfertaCard.tsx` — Agregados imports de `Alert` y `lealtadService`, prop `onEliminar` en interfaz, estilo `deleteButton`
 
 ## Notas Importantes
 
