@@ -1,0 +1,50 @@
+Quiero que creemos el sistema de QR para lealtad, para esto crea un plan que cumpla todas y cada una de las siguientes especificaciones:
+¿Tenemos que crear un nuevo dominio en el backend para esto, o tiene que vivir dentro del dominio de lealtad?
+Actualmente el sistema de QR serviría para registrar datos en la tabla Historial_Uso_Ofertas, pero primero hay que definir cómo funciona la cartera de lealtad:
+Tenemos la tabla Configuracion_Lealtad, aquí están todos los atributos que el dueño de negocio modificará para configurar su entorno de lealtad, reglas que debe seguir el backend con esta tabla:
+1. Si meses vigencia es 0 o null, significa que no hay vigencia en los puntos.
+2. Si tasa_puntos_por_peso es 0 o null, significa que el sistema se basa en sellos.
+3. Si puntos_por_visita es 0 o null, significa que el sistema se basa en puntos.
+4. Si tasa_puntos_por_peso y puntos_por_visita son diferentes a 0 o null, se ocupan ambos sistemas (Sellos y puntos)
+5. Cambio: Impacto en la base de datos y backend - Crear tabla intermedia entre Configuración_lealtad y Servicios_Productos para que pueda haber más de un producto estrella. 
+	5.1 Mantener los atributos de configuración_lealtad en la misma tabla, excepto por Multiplicador_producto, debe haber un multiplicador por cada producto estrella.
+6. Para meses_vigencia_puntos, tendremos que coordinar este atributo con fecha_ultima_acumulacion de la tabla Cartera_Lealtad:
+	6.1 Si ( fecha_actual - fecha_ultima_acumulacion ) > meses_vigencia_puntos Entonces se pondrán en 0 los puntos y sellos
+	6.2 En cada compra de productos o servicios se debe actualizar fecha_ultima_acumulacion
+
+Aplicación de la tabla Configuracion_lealtad:
+1. Crear una pestaña, en el módulo de lealtad, que se llame "Configuración wallet".
+2. Habrá inputs para cada atributo de la tabla Configuracion_lealtad:
+	2.1 Para el input tasa_puntos_por_peso habrá un input a lado de un print de la siguiente manera "1$ = "[Input número]
+	2.2 Para el input puntos_por_visita habrá un input a lado de un print de la siguiente manera "1 visita = "[Input número]
+	2.3 Para meses_vigencia_puntos habrá un input a lado de un print de la siguiente manera "Meses de vida de los puntos/sellos: "[Input número]
+	2.4 Para productos estrella habrá un dropdown button, cuando se de clic en el, mostrará un buscador de productos y servicios, quiero que debajo del input para buscar se muestren los productos o servicios, que llegue hasta un máximo de 4 productos o servicios mostrándose a la vez, que se pueda hacer scroll y que se puedan seleccionar más de 1. Conforma se vaya escribiendo el nombre del producto o servicio, que se vayan mostrando los resultados filtrados.
+	2.5 Una vez que se seleccionen los productos o servicios, que se vayan mostrando en debajo del dropdownbutton y que se muestren en cards:
+		2.5.1 El card tendrá el nombre del producto/servicio en la parte superior, debajo del lado izquierdo, se mostrará el ícono que haya elegido el dueño para ese producto/servicio, debajo del nombre del lado derecho, habrá un input para el multiplicador_producto.
+
+Otros cambios importantes que impactarán al sistema QR para lealtad:
+1. Agregar a la tabla Ofertas 2 nuevos atributos llamados "Premio_en_puntos" y "Premio_en_sellos", para que las ofertas puedan dar premios a la wallet.
+2. Cambios en el frontend - Formulario Crear Oferta:
+	2.1 En el motor NxN, en la elección del prodcuto o servicio, se debe poder elegir más de un producto o servicio tanto para Requisito como para Recompensa.
+	2.2 En lugar de que haya un selector para producto o servicio, debe haber un dropdownbutton, cuando se de clic en el, mostrará un buscador de productos y servicios, quiero que debajo del input para buscar se muestren los productos o servicios, que llegue hasta un máximo de 4 productos o servicios mostrándose a la vez, que se pueda hacer scroll y que se puedan seleccionar más de 1. Conforma se vaya escribiendo el nombre del producto o servicio, que se vayan mostrando los resultados filtrados.
+	2.3 Una vez que se seleccionen los productos o servicios, que se vayan mostrando en debajo del dropdownbutton y que se muestren en cards:
+		2.3.1 El card tendrá el nombre del producto/servicio en la parte superior, debajo del lado izquierdo, se mostrará el ícono que haya elegido el dueño para ese producto/servicio, debajo del nombre del lado derecho, habrá inputs para "Cantidad", "Porcentaje descuento (1 - 100)", "Monto descuento", "Monto_minimo" (este último sólo aplica a Requisito).
+	2.4 Debajo del input "Límite de canjes por usuario" estarán los inputs para "Premio_en_puntos" y "Premio_en_sellos".
+		2.4.1 Ambos inputs pueden estar vacíos (No se dan puntos por la oferta), pero también ambos pueden tener un valor, en ese caso, el código QR deberá dar puntos y sellos a la tabla carteras_lealtad.
+
+Todos los cambios a nivel base de datos tienen repercusión en el backend, en models, schemas, router para agregar endpoints de acceso y modificación de los datos. La lógica repecutirá en el backend en service y config. ES IMPORTANTE ACTUALIZAR ESTOS ARCHIVOS CONTEMPLANDO TODOS Y CADA UNO DE LAS ESPECIFICACIONES QUE TE ESCRIBÍ ARRIBA EN ESTE MENSAJE.
+
+Tomando esto en cuenta, el sistema de QR debe guardar registros en Historial_uso_ofertas, así como de darle puntos y/o sellos, al usuario específico que esté usando la oferta, en su Cartera de lealtad (Tabla Carteras_Lealtad) y actualizar la fecha de última acumulación.
+
+Otras consideraciones IMPORTANTES en la lógica del lealtad:
+1. Si se tiene un valor en las fechas 
+
+
+Para crear el plan, quiero que lo dividas en puntos, usando checkpoints, cada que llegues a uno, debes ejecutar un test para validar lo creado y/o modificado en el punto sea correcto, en caso afirmativo, sigue con el siguiente punto, si no, que regresa a resolver el problema generado. Pon estas instrucciones en el PLAN y crea el plan con esta idea de los checkpoints.
+
+ERRORES A SOLUCIONAR
+1. Al momento de crear una oferta aparece un error [object][object] y en consola aparece:
+INFO:     127.0.0.1:56219 - "GET /api/lealtad/negocios/1/sucursales HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56240 - "POST /api/lealtad/negocios/1/ofertas HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:62277 - "POST /api/lealtad/negocios/1/ofertas HTTP/1.1" 422 Unprocessable Entity
+

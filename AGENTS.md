@@ -245,6 +245,42 @@ La paleta completa con todas las tonalidades (lime, emerald, sky, tan, lavender,
 - `OfertaCard.tsx` — Agregado botón de eliminar (ícono basura rojo) con confirmación Alert y callback `onEliminar`
 - `OfertaCard.tsx` — Agregados imports de `Alert` y `lealtadService`, prop `onEliminar` en interfaz, estilo `deleteButton`
 
+### Corrección Modelo CitaServicio — Alineación con DBML [COMPLETADO — HOY]
+
+**Objetivo:** Corregir inconsistencia entre el modelo `CitaServicio` y la fuente de verdad (`arquitectura_db.dbml`), resolviendo el error `id_servicio_disponible is an invalid keyword argument for CitaServicio`.
+
+**Problema:**
+- El modelo usaba `id_servicio_producto` (FK a `servicios_productos`)
+- El DBML y seed data usaban `id_servicio_disponible` (FK a `servicios_disponibles`) + `costo_actual`
+- `datosprueba_BD.py` ya estaba actualizado pero el modelo no, causando error en ejecución
+
+**Cambios realizados:**
+
+**Backend — Modelos (`backend/agenda/models.py`):**
+- `CitaServicio.id_servicio_producto` → `CitaServicio.id_servicio_disponible` (FK a `servicios_disponibles.id`)
+- Agregado campo `costo_actual` (Numeric(10, 2), nullable=False)
+- Alineación completa con DBML tabla `citas_servicios`
+
+**Backend — Schemas (`backend/agenda/schemas.py`):**
+- `CitaCreate.id_servicio_producto` → `CitaCreate.id_servicio_disponible`
+
+**Backend — Router (`backend/agenda/router.py`):**
+- `crear_cita()` ahora resuelve el costo desde `ServicioDisponible.servicio_producto.costo`
+- Query a `catalogo_models.ServicioDisponible` para obtener costo del servicio
+- Creación de `CitaServicio` incluye `id_servicio_disponible` + `costo_actual`
+- Import de `catalogo_models` ya presente (sin cambios adicionales)
+
+**Backend — Seed Data (`backend/datosprueba_BD.py`):**
+- 4 registros de `CitaServicio` actualizados con `costo_actual` explícito:
+  - Reserva Mesa VIP: $100.00
+  - Corte de Cabello: $250.00
+  - Masaje Relajante: $800.00
+  - Capuchino Grande: $65.00
+
+**Validación:**
+- Opción 1 (reset BD) + Opción 2 (seed) ejecutadas exitosamente
+- Mensaje: `✅ ¡Base de datos rellenada al 100% en todos sus dominios!`
+
 ## Notas Importantes
 
 - **Cuentas de prueba:** `admin1@circle.com` (admin), `carlos@negocio.com` (dueño). Todas las contraseñas de prueba: `123`
