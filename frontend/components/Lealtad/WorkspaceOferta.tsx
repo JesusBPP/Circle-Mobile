@@ -109,9 +109,17 @@ export default function WorkspaceOferta({ ofertaData, onGuardarEdicion }: Worksp
         <View style={styles.infoRow}>
           <Text style={styles.infoLabel}>Vigencia:</Text>
           <Text style={styles.infoValue}>
-            {ofertaData.fecha_inicio ? new Date(ofertaData.fecha_inicio).toLocaleDateString('es-ES') : 'Sin fecha'} → {ofertaData.fecha_fin ? new Date(ofertaData.fecha_fin).toLocaleDateString('es-ES') : 'Sin fecha'}
+            {ofertaData.limite_existencias ? 'Válida hasta agotar existencias' : (ofertaData.fecha_inicio ? new Date(ofertaData.fecha_inicio).toLocaleDateString('es-ES') : 'Sin fecha') + ' → ' + (ofertaData.fecha_fin ? new Date(ofertaData.fecha_fin).toLocaleDateString('es-ES') : 'Sin fecha')}
           </Text>
         </View>
+        {(ofertaData.premio_en_puntos || ofertaData.premio_en_sellos) && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Premios al Canjear:</Text>
+            <Text style={[styles.infoValue, { color: '#d4af37', fontWeight: 'bold' }]}>
+              {ofertaData.premio_en_puntos ? `+${ofertaData.premio_en_puntos} puntos` : ''}{ofertaData.premio_en_sellos ? ` +${ofertaData.premio_en_sellos} sellos` : ''}
+            </Text>
+          </View>
+        )}
         {ofertaData.limite_existencias !== null && ofertaData.limite_existencias !== undefined && (
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Stock Restante:</Text>

@@ -7,7 +7,7 @@ interface FiltrosLealtadProps {
 }
 
 export default function FiltrosLealtad({ filtroActivo, setFiltroActivo }: FiltrosLealtadProps) {
-  const filtros = ['Ofertas Activas', 'Ofertas', 'Publicaciones', 'Todas', 'Calificación'];
+  const filtros = ['Ofertas Activas', 'Ofertas', 'Publicaciones', 'Todas', 'Calificación', 'Configuración'];
 
   return (
     <View style={styles.container}>

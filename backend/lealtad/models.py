@@ -83,6 +83,8 @@ class Oferta(Base):
 
     es_publica = Column(Boolean, default=True, nullable=False)
     costo_en_puntos = Column(Numeric(10, 2), nullable=True)
+    premio_en_puntos = Column(Numeric(10, 2), nullable=True)
+    premio_en_sellos = Column(Integer, nullable=True)
 
     estado = Column(String, default="activa", nullable=False)
 
@@ -166,13 +168,23 @@ class ConfiguracionLealtad(Base):
     tasa_puntos_por_peso = Column(Numeric(10, 2), default=0.0)
     puntos_por_visita = Column(Integer, default=0)
 
-    id_producto_estrella = Column(Integer, ForeignKey("servicios_productos.id"), nullable=True)
-    multiplicador_producto = Column(Numeric(5, 2), default=1.0)
-
     meses_vigencia_puntos = Column(Integer, default=12)
 
     negocio = relationship("Negocio", back_populates="configuracion_lealtad")
-    producto_estrella = relationship("ServicioProducto", back_populates="configuraciones_lealtad")
+    productos_estrella = relationship("ConfiguracionProductoEstrella", back_populates="configuracion", cascade="all, delete-orphan")
+
+
+class ConfiguracionProductoEstrella(Base):
+    """Producto estrella con multiplicador: tabla intermedia para soportar múltiples productos."""
+    __tablename__ = "configuracion_productos_estrella"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    id_configuracion_lealtad = Column(Integer, ForeignKey("configuracion_lealtad.id"), nullable=False)
+    id_servicio_producto = Column(Integer, ForeignKey("servicios_productos.id"), nullable=False)
+    multiplicador_producto = Column(Numeric(5, 2), default=1.0, nullable=False)
+
+    configuracion = relationship("ConfiguracionLealtad", back_populates="productos_estrella")
+    servicio_producto = relationship("ServicioProducto")
 
 
 class CarteraLealtad(Base):

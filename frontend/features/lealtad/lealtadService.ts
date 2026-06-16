@@ -10,6 +10,10 @@ interface CanjeResponseData {
   id_uso: number;
   titulo_oferta: string;
   descuento_aplicado: string;
+  puntos_otorgados: number | null;
+  sellos_otorgados: number | null;
+  saldo_puntos_actual: number;
+  saldo_sellos_actual: number;
 }
 
 interface ServicioDisponible {
@@ -180,6 +184,17 @@ const lealtadService = {
       return response.data;
     } catch (error: any) {
       console.error('Error al cargar sucursales:', error);
+      return [];
+    }
+  },
+
+  /** Obtiene productos y servicios únicos del negocio para seleccionar como producto estrella. */
+  obtenerCatalogoProductosEstrella: async (idNegocio: number): Promise<Array<{id: number, nombre: string, costo: number, tipo_producto: string, url_imagen?: string}>> => {
+    try {
+      const response = await apiClient.get(`/lealtad/negocios/${idNegocio}/catalogo-productos-estrella`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error al cargar catálogo de productos estrella:', error);
       return [];
     }
   },

@@ -312,11 +312,21 @@ def llenar_base_datos():
         db.commit()
 
         print("🪙 Configurando Lealtad Global...")
-        config_lealtad1 = lealtad_models.ConfiguracionLealtad(id_negocio=negocio1.id, tasa_puntos_por_peso=1.0, puntos_por_visita=1, id_producto_estrella=prod_capuchino.id, multiplicador_producto=2.0)
-        config_lealtad2 = lealtad_models.ConfiguracionLealtad(id_negocio=negocio2.id, tasa_puntos_por_peso=0.5, puntos_por_visita=2, id_producto_estrella=serv_corte.id, multiplicador_producto=1.5)
-        config_lealtad3 = lealtad_models.ConfiguracionLealtad(id_negocio=negocio3.id, tasa_puntos_por_peso=2.0, puntos_por_visita=5, id_producto_estrella=serv_masaje.id, multiplicador_producto=2.0)
-        config_lealtad5 = lealtad_models.ConfiguracionLealtad(id_negocio=negocio5.id, tasa_puntos_por_peso=1.5, puntos_por_visita=3, id_producto_estrella=serv_comida.id, multiplicador_producto=1.8)
+        config_lealtad1 = lealtad_models.ConfiguracionLealtad(id_negocio=negocio1.id, tasa_puntos_por_peso=1.0, puntos_por_visita=1)
+        config_lealtad2 = lealtad_models.ConfiguracionLealtad(id_negocio=negocio2.id, tasa_puntos_por_peso=0.5, puntos_por_visita=2)
+        config_lealtad3 = lealtad_models.ConfiguracionLealtad(id_negocio=negocio3.id, tasa_puntos_por_peso=2.0, puntos_por_visita=5)
+        config_lealtad5 = lealtad_models.ConfiguracionLealtad(id_negocio=negocio5.id, tasa_puntos_por_peso=1.5, puntos_por_visita=3)
         db.add_all([config_lealtad1, config_lealtad2, config_lealtad3, config_lealtad5])
+        db.commit()
+
+        db.add_all([
+            lealtad_models.ConfiguracionProductoEstrella(id_configuracion_lealtad=config_lealtad1.id, id_servicio_producto=prod_capuchino.id, multiplicador_producto=2.0),
+            lealtad_models.ConfiguracionProductoEstrella(id_configuracion_lealtad=config_lealtad1.id, id_servicio_producto=prod_latte.id, multiplicador_producto=1.5),
+            lealtad_models.ConfiguracionProductoEstrella(id_configuracion_lealtad=config_lealtad2.id, id_servicio_producto=serv_corte.id, multiplicador_producto=1.5),
+            lealtad_models.ConfiguracionProductoEstrella(id_configuracion_lealtad=config_lealtad3.id, id_servicio_producto=serv_masaje.id, multiplicador_producto=2.0),
+            lealtad_models.ConfiguracionProductoEstrella(id_configuracion_lealtad=config_lealtad3.id, id_servicio_producto=serv_facial.id, multiplicador_producto=1.8),
+            lealtad_models.ConfiguracionProductoEstrella(id_configuracion_lealtad=config_lealtad5.id, id_servicio_producto=serv_comida.id, multiplicador_producto=1.8),
+        ])
         db.commit()
         
         cartera1 = lealtad_models.CarteraLealtad(id_usuario_consumidor=cons1.id, id_negocio=negocio1.id, saldo_puntos=165.00, saldo_sellos=1)
@@ -340,19 +350,21 @@ def llenar_base_datos():
         db.add(lealtad_models.HistorialMovimientoLealtad(id_cartera=cartera3.id, id_transaccion=trans3.id, tipo_movimiento="acumulacion", monto_puntos=70.00, monto_sellos=1, descripcion="Acumulación por compra"))
         db.add(lealtad_models.HistorialMovimientoLealtad(id_cartera=cartera4.id, id_transaccion=trans4.id, tipo_movimiento="acumulacion", monto_puntos=250.00, monto_sellos=1, descripcion="Acumulación por compra"))
         db.add(lealtad_models.HistorialMovimientoLealtad(id_cartera=cartera5.id, id_transaccion=trans5.id, tipo_movimiento="acumulacion", monto_puntos=380.00, monto_sellos=2, descripcion="Acumulación por compra"))
+        db.add(lealtad_models.HistorialMovimientoLealtad(id_cartera=cartera11.id, tipo_movimiento="caducidad", monto_puntos=-50.00, monto_sellos=-1, descripcion="Puntos/sellos caducados por inactividad"))
+        db.add(lealtad_models.HistorialMovimientoLealtad(id_cartera=cartera13.id, tipo_movimiento="caducidad", monto_puntos=-25.00, monto_sellos=0, descripcion="Puntos/sellos caducados por inactividad"))
         db.commit()
 
         print("🎁 Creando Ofertas con Reglas N x N (Nueva estructura con tabla intermedia)...")
-        oferta1 = lealtad_models.Oferta(id_sucursales=sucursal_cafe_centro.id, titulo="50% Off en Capuchino con tu Reserva", descripcion="Promo exclusiva para clientes VIP", es_publica=False, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=30))
-        oferta2 = lealtad_models.Oferta(id_sucursales=sucursal_cafe_centro.id, titulo="2x1 en Lattes los Martes", descripcion="Todos los martes, lleva dos lattes por el precio de uno", es_publica=True, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=60))
+        oferta1 = lealtad_models.Oferta(id_sucursales=sucursal_cafe_centro.id, titulo="50% Off en Capuchino con tu Reserva", descripcion="Promo exclusiva para clientes VIP", es_publica=False, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=30), premio_en_puntos=30, premio_en_sellos=1)
+        oferta2 = lealtad_models.Oferta(id_sucursales=sucursal_cafe_centro.id, titulo="2x1 en Lattes los Martes", descripcion="Todos los martes, lleva dos lattes por el precio de uno", es_publica=True, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=60), premio_en_puntos=20)
         oferta3 = lealtad_models.Oferta(id_sucursales=sucursal_cafe_sur.id, titulo="Combo Desayuno: Café + Croissant", descripcion="Café + Croissant con $20 de descuento", es_publica=True, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=45))
         oferta4 = lealtad_models.Oferta(id_sucursales=sucursal_barber_norte.id, titulo="Corte + Barba con 20% OFF", descripcion="Servicio completo con descuento", es_publica=True, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=30))
         oferta5 = lealtad_models.Oferta(id_sucursales=sucursal_barber_centro.id, titulo="3 Cortes por el precio de 2", descripcion="Compra 3 cortes y el tercero gratis", es_publica=True, estado="pausada", fecha_inicio=hoy - timedelta(days=10), fecha_fin=hoy + timedelta(days=20))
-        oferta6 = lealtad_models.Oferta(id_sucursales=sucursal_spa.id, titulo="Masaje + Facial con 30% OFF", descripcion="Paquete de relajación total", es_publica=True, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=45))
+        oferta6 = lealtad_models.Oferta(id_sucursales=sucursal_spa.id, titulo="Masaje + Facial con 30% OFF", descripcion="Paquete de relajación total", es_publica=True, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=45), premio_en_puntos=100, premio_en_sellos=2)
         oferta7 = lealtad_models.Oferta(id_sucursales=sucursal_spa_coyoacan.id, titulo="Segunda visita 50% OFF", descripcion="Descuento en tu segunda visita del mes", es_publica=False, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=90))
         oferta8 = lealtad_models.Oferta(id_sucursales=sucursal_restaurante.id, titulo="Bebida gratis con platillo", descripcion="Bebida artesanal de cortesía al ordenar platillo del día", es_publica=True, estado="activa", fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=30))
         oferta9 = lealtad_models.Oferta(id_sucursales=sucursal_cafe_norte.id, titulo="Pastel Limitado", descripcion="Solo 10 pasteles disponibles a precio especial", es_publica=True, estado="activa", limite_existencias=10, fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=15))
-        oferta10 = lealtad_models.Oferta(id_sucursales=sucursal_gym.id, titulo="Clase Premium por Puntos", descripcion="Canjea 500 puntos por una clase personalizada", es_publica=True, estado="activa", costo_en_puntos=500.00, fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=60))
+        oferta10 = lealtad_models.Oferta(id_sucursales=sucursal_gym.id, titulo="Clase Premium por Puntos", descripcion="Canjea 500 puntos por una clase personalizada", es_publica=True, estado="activa", costo_en_puntos=500.00, fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=60), premio_en_sellos=3)
         oferta11 = lealtad_models.Oferta(id_sucursales=sucursal_restaurante_sur.id, titulo="Bienvenida Única", descripcion="Descuento exclusivo para nuevos clientes (uso único)", es_publica=True, estado="activa", limite_por_usuario=1, fecha_inicio=hoy, fecha_fin=hoy + timedelta(days=90))
         oferta12 = lealtad_models.Oferta(id_sucursales=sucursal_barber_norte.id, titulo="Oferta Eliminada", descripcion="Esta oferta fue eliminada (soft delete)", es_publica=True, estado="eliminada", fecha_inicio=hoy - timedelta(days=30), fecha_fin=hoy - timedelta(days=1))
         db.add_all([oferta1, oferta2, oferta3, oferta4, oferta5, oferta6, oferta7, oferta8, oferta9, oferta10, oferta11, oferta12])

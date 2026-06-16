@@ -16,7 +16,6 @@ Tablas exactas contenidas en este archivo:
 """
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Numeric, DateTime
-from sqlalchemy.orm import relationship
 from backend.core.database import Base
 
 
@@ -40,9 +39,6 @@ class ServicioProducto(Base):
     url_imagen = Column(String)
     costo = Column(Numeric(10, 2), nullable=False)
     tipo_producto = Column(String, nullable=False) # 'servicio' o 'producto'
-
-    # Relación con configuraciones de lealtad (Producto estrella)
-    configuraciones_lealtad = relationship("ConfiguracionLealtad", back_populates="producto_estrella")
 
 
 class ProcesoServicioProducto(Base):

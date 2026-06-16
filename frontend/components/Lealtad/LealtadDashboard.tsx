@@ -13,6 +13,7 @@ import ModalCrearLealtad from './ModalCrearLealtad';
 import WorkspaceOferta from './WorkspaceOferta';
 import WorkspacePublicacion from './WorkspacePublicacion';
 import WorkspaceCalificacion from './WorkspaceCalificacion';
+import ConfiguracionWallet from './ConfiguracionWallet';
 
 // 🌟 INTEGRACIÓN DE RED Y CAPA DE DATOS ENTERPRISE
 import { useAuthStore } from '../../store/useAuthStore';
@@ -112,6 +113,15 @@ export default function LealtadDashboard() {
         <>
           <FiltrosLealtad filtroActivo={filtroActivo} setFiltroActivo={setFiltroActivo} />
           <WorkspaceCalificacion onNavegarAWorkspace={handleNavegarDesdeComentario} />
+        </>
+      );
+    }
+
+    if (filtroActivo === 'Configuración') {
+      return (
+        <>
+          <FiltrosLealtad filtroActivo={filtroActivo} setFiltroActivo={setFiltroActivo} />
+          <ConfiguracionWallet idNegocio={negocioId || 1} />
         </>
       );
     }

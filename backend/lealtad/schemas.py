@@ -61,6 +61,12 @@ class OfertaReglaServicioCreate(BaseModel):
     monto_descuento: Optional[float] = None
     monto_minimo: Optional[float] = None
 
+    @model_validator(mode='after')
+    def validar_descuento_exclusivo(self):
+        if self.porcentaje_descuento is not None and self.monto_descuento is not None:
+            raise ValueError('Solo se puede especificar porcentaje de descuento O monto de descuento, no ambos.')
+        return self
+
 
 class OfertaReglaCreate(BaseModel):
     """Bloque de Lego: un requisito o recompensa para armar una oferta."""
@@ -99,12 +105,14 @@ class OfertaCreate(BaseModel):
     """Payload para crear una oferta con sus reglas NxN y whitelist opcional."""
     titulo: str
     descripcion: Optional[str] = None
-    fecha_inicio: datetime
-    fecha_fin: datetime
+    fecha_inicio: Optional[datetime] = None
+    fecha_fin: Optional[datetime] = None
     costo_en_puntos: Optional[float] = None
     limite_existencias: Optional[int] = None
     limite_por_usuario: Optional[int] = None
     es_publica: bool = True
+    premio_en_puntos: Optional[float] = None
+    premio_en_sellos: Optional[int] = None
     whitelist_ids: List[int] = []
     reglas: List[OfertaReglaCreate] = []
     id_sucursales: Optional[List[int]] = None
@@ -114,10 +122,11 @@ class OfertaCreate(BaseModel):
     def validar_reglas_oferta(cls, values):
         inicio = values.get('fecha_inicio')
         fin = values.get('fecha_fin')
+        limite_existencias = values.get('limite_existencias')
         es_publica = values.get('es_publica', True)
         whitelist = values.get('whitelist_ids')
 
-        if inicio and fin and fin <= inicio:
+        if limite_existencias is None and inicio and fin and fin <= inicio:
             raise ValueError('La fecha de finalización debe ser posterior a la fecha de inicio.')
         if not es_publica and (not whitelist or len(whitelist) == 0):
             raise ValueError('Una oferta privada (VIP) debe tener al menos un cliente en la whitelist.')
@@ -172,13 +181,30 @@ class PublicacionUpdate(BaseModel):
     habilitar_comentarios: Optional[bool] = None
 
 
+class ProductoEstrellaCreate(BaseModel):
+    """Producto estrella para configurar multiplicador."""
+    id_servicio_producto: int
+    multiplicador_producto: float = 1.0
+
+
+class ProductoEstrellaResponse(BaseModel):
+    """Producto estrella serializado con datos del servicio."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    id_servicio_producto: int
+    nombre_servicio: Optional[str] = None
+    tipo_servicio: Optional[str] = None
+    url_imagen: Optional[str] = None
+    multiplicador_producto: float
+
+
 class ConfiguracionLealtadUpdate(BaseModel):
     """Payload para actualizar las reglas del programa de lealtad."""
     tasa_puntos_por_peso: Optional[float] = None
     puntos_por_visita: Optional[int] = None
-    id_producto_estrella: Optional[int] = None
-    multiplicador_producto: Optional[float] = None
     meses_vigencia_puntos: Optional[int] = None
+    productos_estrella: Optional[List[ProductoEstrellaCreate]] = None
 
 
 # ==========================================
@@ -210,6 +236,8 @@ class OfertaResponse(BaseModel):
     limite_por_usuario: Optional[int] = None
     es_publica: bool
     costo_en_puntos: Optional[float] = None
+    premio_en_puntos: Optional[float] = None
+    premio_en_sellos: Optional[int] = None
     estado: str
     total_canjes: int = 0
     stock_restante: Optional[int] = None
@@ -251,9 +279,8 @@ class ConfiguracionLealtadResponse(BaseModel):
     id_negocio: int
     tasa_puntos_por_peso: float
     puntos_por_visita: int
-    id_producto_estrella: Optional[int] = None
-    multiplicador_producto: float
     meses_vigencia_puntos: int
+    productos_estrella: List[ProductoEstrellaResponse] = []
 
 
 class DashboardLealtadResponse(BaseModel):
@@ -296,3 +323,7 @@ class CanjeResponse(BaseModel):
     id_uso: int
     titulo_oferta: str
     descuento_aplicado: str
+    puntos_otorgados: Optional[float] = None
+    sellos_otorgados: Optional[int] = None
+    saldo_puntos_actual: float
+    saldo_sellos_actual: int

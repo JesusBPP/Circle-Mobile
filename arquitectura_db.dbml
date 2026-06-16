@@ -210,6 +210,8 @@ Table Ofertas {
   limite_por_usuario int [note: "Null = ilimitado, 1 = uso único por consumidor"]
   es_publica boolean [not null, default: true, note: "Si es True, ignora la Whitelist"]
   costo_en_puntos decimal [default: null, note: "Si tiene valor, la oferta funciona como una recompensa que se 'compra' descontando saldo de la cartera"]
+  premio_en_puntos decimal [default: null, note: "Puntos que se otorgan al canjear la oferta via QR"]
+  premio_en_sellos int [default: null, note: "Sellos que se otorgan al canjear la oferta via QR"]
   
   // Control manual de la promoción
   estado varchar [not null, default: "'activa'", note: "Ej: 'activa', 'pausada', 'finalizada'. Permite al dueño apagarla manualmente independientemente de las fechas."]
@@ -263,12 +265,16 @@ Table Configuracion_Lealtad {
   // Regla 2: Visitas (Sellos)
   puntos_por_visita int [default: 0, note: "Ej: 1 sello/punto por cada transacción completada"]
   
-  // Regla 3: Producto Estrella (Puntos dobles)
-  id_producto_estrella int [ref: > Servicios_Productos.id, note: "Producto que detona el multiplicador"]
-  multiplicador_producto decimal [default: 1.0, note: "Ej: 2.0 = Puntos Dobles si el ticket incluye el producto estrella"]
-  
   // Regla de caducidad
   meses_vigencia_puntos int [default: 12]
+}
+
+// Productos estrella: tabla intermedia para soportar múltiples productos con multiplicador
+Table Configuracion_Productos_Estrella {
+  id int [pk, increment]
+  id_configuracion_lealtad int [not null, ref: > Configuracion_Lealtad.id]
+  id_servicio_producto int [not null, ref: > Servicios_Productos.id]
+  multiplicador_producto decimal [not null, default: 1.0, note: "Ej: 2.0 = Puntos dobles"]
 }
 
 // La "Billetera" del consumidor en cada negocio

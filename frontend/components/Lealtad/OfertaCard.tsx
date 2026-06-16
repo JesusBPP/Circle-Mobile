@@ -15,10 +15,12 @@ export interface OfertaFeedItem {
   estado: string;
   es_publica: boolean;
   costo_en_puntos: number | null;
+  premio_en_puntos: number | null;
+  premio_en_sellos: number | null;
   limite_existencias: number | null;
   limite_por_usuario: number | null;
-  fecha_inicio: string;
-  fecha_fin: string;
+  fecha_inicio: string | null;
+  fecha_fin: string | null;
   fecha: string;
   total_canjes: number;
   stock_restante: number | null;
@@ -74,6 +76,14 @@ export default function OfertaCard({ data, onPress, onEliminar }: OfertaCardProp
             {data.limite_existencias !== null ? `${data.limite_existencias} disp.` : 'Ilimitado'}
           </Text>
         </View>
+        {(data.premio_en_puntos || data.premio_en_sellos) && (
+          <View style={styles.statBox}>
+            <Ionicons name="star" size={16} color="#d4af37" />
+            <Text style={styles.statText}>
+              {data.premio_en_puntos ? `+${data.premio_en_puntos}pts` : ''}{data.premio_en_sellos ? ` +${data.premio_en_sellos}sel` : ''}
+            </Text>
+          </View>
+        )}
         <TouchableOpacity
           style={styles.deleteButton}
           onPress={(e) => {

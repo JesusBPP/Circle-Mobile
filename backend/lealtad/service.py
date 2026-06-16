@@ -85,6 +85,41 @@ def validar_acceso_negocio(db: Session, id_negocio: int, usuario_id: int):
 
 
 # ==========================================
+# VIGENCIA DE PUNTOS/SELLOS
+# ==========================================
+
+def verificar_vigencia_puntos(db: Session, cartera: models.CarteraLealtad) -> bool:
+    config = db.query(models.ConfiguracionLealtad).filter(
+        models.ConfiguracionLealtad.id_negocio == cartera.id_negocio
+    ).first()
+
+    if not config or not config.meses_vigencia_puntos or config.meses_vigencia_puntos == 0:
+        return True
+
+    if not cartera.fecha_ultima_acumulacion:
+        return True
+
+    meses_transcurridos = (datetime.utcnow() - cartera.fecha_ultima_acumulacion).days / 30.44
+
+    if meses_transcurridos > config.meses_vigencia_puntos:
+        movimiento = models.HistorialMovimientoLealtad(
+            id_cartera=cartera.id,
+            tipo_movimiento="caducidad",
+            monto_puntos=-cartera.saldo_puntos,
+            monto_sellos=-cartera.saldo_sellos,
+            descripcion="Puntos/sellos caducados por inactividad",
+            fecha_movimiento=datetime.utcnow()
+        )
+        db.add(movimiento)
+        cartera.saldo_puntos = 0
+        cartera.saldo_sellos = 0
+        db.commit()
+        return False
+
+    return True
+
+
+# ==========================================
 # CATÁLOGO DISPONIBLE PARA OFERTAS
 # ==========================================
 
@@ -155,7 +190,7 @@ def obtener_consumidores_afiliados(db: Session, id_negocio: int):
 
 
 def obtener_sucursales_negocio(db: Session, id_negocio: int):
-    """Devuelve todas las sucursales del negocio para el selector de ofertas."""
+    """Devuelve todos las sucursales del negocio para el selector de ofertas."""
     sucursales = db.query(negocios_models.Sucursal).filter(
         negocios_models.Sucursal.id_negocio == id_negocio
     ).order_by(negocios_models.Sucursal.nombre).all()
@@ -168,6 +203,45 @@ def obtener_sucursales_negocio(db: Session, id_negocio: int):
             "estado": s.estado
         }
         for s in sucursales
+    ]
+
+
+def obtener_catalogo_productos_estrella(db: Session, id_negocio: int):
+    """
+    Devuelve todos los productos y servicios del negocio para seleccionar como producto estrella.
+    Retorna productos únicos (sin duplicados por sucursal).
+    """
+    sucursales = db.query(negocios_models.Sucursal.id).filter(
+        negocios_models.Sucursal.id_negocio == id_negocio
+    ).all()
+
+    if not sucursales:
+        return []
+
+    ids_sucursales = [s[0] for s in sucursales]
+
+    ids_productos = db.query(catalogo_models.ServicioDisponible.id_servicio_producto).filter(
+        catalogo_models.ServicioDisponible.id_sucursal.in_(ids_sucursales)
+    ).distinct().all()
+
+    if not ids_productos:
+        return []
+
+    ids_productos = [p[0] for p in ids_productos]
+
+    productos = db.query(catalogo_models.ServicioProducto).filter(
+        catalogo_models.ServicioProducto.id.in_(ids_productos)
+    ).all()
+
+    return [
+        {
+            "id": p.id,
+            "nombre": p.nombre,
+            "costo": float(p.costo),
+            "tipo_producto": p.tipo_producto,
+            "url_imagen": p.url_imagen
+        }
+        for p in productos
     ]
 
 
@@ -317,6 +391,10 @@ def obtener_dashboard_negocio(db: Session, id_negocio: int):
         if of.limite_existencias is not None:
             stock_restante = of.limite_existencias - total_canjes
 
+        fecha_inicio_serialized = None if of.limite_existencias else (of.fecha_inicio.isoformat() if of.fecha_inicio else None)
+        fecha_fin_serialized = None if of.limite_existencias else (of.fecha_fin.isoformat() if of.fecha_fin else None)
+        fecha_display = "Válida hasta agotar existencias" if of.limite_existencias else (of.fecha_inicio.strftime("%d %b %Y") if of.fecha_inicio else "Sin fecha")
+
         feed_items.append({
             "id": f"o-{of.id}",
             "id_real": of.id,
@@ -328,11 +406,13 @@ def obtener_dashboard_negocio(db: Session, id_negocio: int):
             "estado": of.estado,
             "es_publica": of.es_publica,
             "costo_en_puntos": float(of.costo_en_puntos) if of.costo_en_puntos else None,
+            "premio_en_puntos": float(of.premio_en_puntos) if of.premio_en_puntos else None,
+            "premio_en_sellos": of.premio_en_sellos,
             "limite_existencias": of.limite_existencias,
             "limite_por_usuario": of.limite_por_usuario,
-            "fecha_inicio": of.fecha_inicio.isoformat() if of.fecha_inicio else None,
-            "fecha_fin": of.fecha_fin.isoformat() if of.fecha_fin else None,
-            "fecha": of.fecha_inicio.strftime("%d %b %Y") if of.fecha_inicio else "Sin fecha",
+            "fecha_inicio": fecha_inicio_serialized,
+            "fecha_fin": fecha_fin_serialized,
+            "fecha": fecha_display,
             "total_canjes": total_canjes,
             "stock_restante": stock_restante,
             "reglas": reglas_serializadas
@@ -404,6 +484,8 @@ def crear_oferta_negocio(db: Session, id_negocio: int, oferta: schemas.OfertaCre
                 limite_existencias=oferta.limite_existencias,
                 limite_por_usuario=oferta.limite_por_usuario,
                 es_publica=oferta.es_publica,
+                premio_en_puntos=oferta.premio_en_puntos,
+                premio_en_sellos=oferta.premio_en_sellos,
                 estado="activa"
             )
             db.add(nueva_oferta)
@@ -606,7 +688,7 @@ def ocultar_comentario(db: Session, id_comentario: int):
 
 def obtener_configuracion_lealtad(db: Session, id_negocio: int):
     """
-    Obtiene la configuración de lealtad del negocio.
+    Obtiene la configuración de lealtad del negocio con productos estrella serializados.
     Si no existe, crea una con valores por defecto y la retorna.
     """
     config = db.query(models.ConfiguracionLealtad).filter(
@@ -618,18 +700,42 @@ def obtener_configuracion_lealtad(db: Session, id_negocio: int):
             id_negocio=id_negocio,
             tasa_puntos_por_peso=0.0,
             puntos_por_visita=0,
-            multiplicador_producto=1.0,
             meses_vigencia_puntos=12
         )
         db.add(config)
         db.commit()
         db.refresh(config)
 
-    return config
+    productos_estrella_db = db.query(models.ConfiguracionProductoEstrella).filter(
+        models.ConfiguracionProductoEstrella.id_configuracion_lealtad == config.id
+    ).all()
+
+    productos_estrella_serializados = []
+    for pe in productos_estrella_db:
+        sp = db.query(catalogo_models.ServicioProducto).filter(
+            catalogo_models.ServicioProducto.id == pe.id_servicio_producto
+        ).first()
+        productos_estrella_serializados.append({
+            "id": pe.id,
+            "id_servicio_producto": pe.id_servicio_producto,
+            "nombre_servicio": sp.nombre if sp else None,
+            "tipo_servicio": sp.tipo_producto if sp else None,
+            "url_imagen": sp.url_imagen if sp else None,
+            "multiplicador_producto": float(pe.multiplicador_producto)
+        })
+
+    return schemas.ConfiguracionLealtadResponse(
+        id=config.id,
+        id_negocio=config.id_negocio,
+        tasa_puntos_por_peso=float(config.tasa_puntos_por_peso),
+        puntos_por_visita=config.puntos_por_visita,
+        meses_vigencia_puntos=config.meses_vigencia_puntos,
+        productos_estrella=productos_estrella_serializados
+    )
 
 
 def actualizar_configuracion_lealtad(db: Session, id_negocio: int, datos: schemas.ConfiguracionLealtadUpdate):
-    """Actualiza las reglas del programa de lealtad del negocio."""
+    """Actualiza las reglas del programa de lealtad del negocio, incluyendo productos estrella."""
     config = db.query(models.ConfiguracionLealtad).filter(
         models.ConfiguracionLealtad.id_negocio == id_negocio
     ).first()
@@ -642,16 +748,27 @@ def actualizar_configuracion_lealtad(db: Session, id_negocio: int, datos: schema
         config.tasa_puntos_por_peso = datos.tasa_puntos_por_peso
     if datos.puntos_por_visita is not None:
         config.puntos_por_visita = datos.puntos_por_visita
-    if datos.id_producto_estrella is not None:
-        config.id_producto_estrella = datos.id_producto_estrella
-    if datos.multiplicador_producto is not None:
-        config.multiplicador_producto = datos.multiplicador_producto
     if datos.meses_vigencia_puntos is not None:
         config.meses_vigencia_puntos = datos.meses_vigencia_puntos
 
+    if datos.productos_estrella is not None:
+        db.query(models.ConfiguracionProductoEstrella).filter(
+            models.ConfiguracionProductoEstrella.id_configuracion_lealtad == config.id
+        ).delete(synchronize_session=False)
+
+        for pe_data in datos.productos_estrella:
+            if pe_data.multiplicador_producto < 1.0:
+                raise HTTPException(status_code=400, detail="El multiplicador no puede ser menor a 1.0.")
+            nuevo_pe = models.ConfiguracionProductoEstrella(
+                id_configuracion_lealtad=config.id,
+                id_servicio_producto=pe_data.id_servicio_producto,
+                multiplicador_producto=pe_data.multiplicador_producto
+            )
+            db.add(nuevo_pe)
+
     db.commit()
     db.refresh(config)
-    return config
+    return obtener_configuracion_lealtad(db, id_negocio)
 
 
 # ==========================================
@@ -704,6 +821,9 @@ def generar_token_qr_logic(db: Session, id_oferta: int, usuario_id: int):
             models.CarteraLealtad.id_negocio == sucursal.id_negocio
         ).first()
 
+        if cartera:
+            verificar_vigencia_puntos(db, cartera)
+
         if not cartera or cartera.saldo_puntos < oferta.costo_en_puntos:
             raise HTTPException(
                 status_code=400,
@@ -714,6 +834,8 @@ def generar_token_qr_logic(db: Session, id_oferta: int, usuario_id: int):
     payload = {
         "id_usuario_consumidor": usuario_id,
         "id_oferta": id_oferta,
+        "premio_en_puntos": float(oferta.premio_en_puntos) if oferta.premio_en_puntos else None,
+        "premio_en_sellos": oferta.premio_en_sellos,
         "exp": expiracion
     }
 
@@ -784,6 +906,9 @@ def canjear_qr_logic(db: Session, request: schemas.CanjearQRRequest, empleado_id
             models.CarteraLealtad.id_negocio == sucursal.id_negocio
         ).first()
 
+        if cartera:
+            verificar_vigencia_puntos(db, cartera)
+
         if not cartera or cartera.saldo_puntos < oferta.costo_en_puntos:
             raise HTTPException(
                 status_code=400,
@@ -814,11 +939,70 @@ def canjear_qr_logic(db: Session, request: schemas.CanjearQRRequest, empleado_id
         fecha_uso=datetime.utcnow()
     )
     db.add(nuevo_uso)
+
+    sucursal = db.query(negocios_models.Sucursal).filter(
+        negocios_models.Sucursal.id == oferta.id_sucursales
+    ).first()
+
+    cartera = db.query(models.CarteraLealtad).filter(
+        models.CarteraLealtad.id_usuario_consumidor == id_consumidor,
+        models.CarteraLealtad.id_negocio == sucursal.id_negocio
+    ).first()
+
+    if not cartera:
+        cartera = models.CarteraLealtad(
+            id_usuario_consumidor=id_consumidor,
+            id_negocio=sucursal.id_negocio,
+            saldo_puntos=0,
+            saldo_sellos=0,
+            fecha_ultima_acumulacion=datetime.utcnow()
+        )
+        db.add(cartera)
+        db.flush()
+
+    verificar_vigencia_puntos(db, cartera)
+
+    puntos_otorgados = None
+    sellos_otorgados = None
+
+    if oferta.premio_en_puntos:
+        cartera.saldo_puntos += oferta.premio_en_puntos
+        puntos_otorgados = float(oferta.premio_en_puntos)
+        movimiento_puntos = models.HistorialMovimientoLealtad(
+            id_cartera=cartera.id,
+            tipo_movimiento="acumulacion",
+            monto_puntos=oferta.premio_en_puntos,
+            monto_sellos=0,
+            descripcion=f"Premio por canje de oferta: {oferta.titulo}",
+            fecha_movimiento=datetime.utcnow()
+        )
+        db.add(movimiento_puntos)
+
+    if oferta.premio_en_sellos:
+        cartera.saldo_sellos += oferta.premio_en_sellos
+        sellos_otorgados = oferta.premio_en_sellos
+        movimiento_sellos = models.HistorialMovimientoLealtad(
+            id_cartera=cartera.id,
+            tipo_movimiento="acumulacion",
+            monto_puntos=0,
+            monto_sellos=oferta.premio_en_sellos,
+            descripcion=f"Premio por canje de oferta: {oferta.titulo}",
+            fecha_movimiento=datetime.utcnow()
+        )
+        db.add(movimiento_sellos)
+
+    if puntos_otorgados or sellos_otorgados:
+        cartera.fecha_ultima_acumulacion = datetime.utcnow()
+
     db.commit()
 
     return schemas.CanjeResponse(
         mensaje="Beneficio aplicado con éxito.",
         id_uso=nuevo_uso.id,
         titulo_oferta=oferta.titulo,
-        descuento_aplicado="Verifica el ticket de la transacción."
+        descuento_aplicado="Verifica el ticket de la transacción.",
+        puntos_otorgados=puntos_otorgados,
+        sellos_otorgados=sellos_otorgados,
+        saldo_puntos_actual=float(cartera.saldo_puntos),
+        saldo_sellos_actual=cartera.saldo_sellos
     )

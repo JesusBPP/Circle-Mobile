@@ -28,7 +28,7 @@ Cada dominio es un módulo independiente con su propio `models.py`, `router.py` 
 
 **Punto de entrada:** `backend/main.py` — Patrón Application Factory. Los modelos se importan antes que los routers para construir el grafo de relaciones de SQLAlchemy.
 
-**Base de datos:** `arquitectura_db.dbml` en la raíz es la fuente de verdad del esquema (32 tablas). Siempre verificar contra este archivo antes de modificar modelos.
+**Base de datos:** `arquitectura_db.dbml` en la raíz es la fuente de verdad del esquema (33 tablas). Siempre verificar contra este archivo antes de modificar modelos.
 
 ### Frontend — Arquitectura Basada en Funcionalidades
 
@@ -53,8 +53,10 @@ Cada dominio es un módulo independiente con su propio `models.py`, `router.py` 
 - **Application Factory:** `crear_aplicacion()` en `main.py`
 - **Service Layer:** Lealtad delega toda la lógica a `lealtad/service.py`
 - **State Machine:** Transiciones de estado de Cita validadas (Programada → Reprogramada/Finalizada/Cancelada)
-- **Soft Delete:** `NegocioSolucion.esta_activa`, `Comentario.esta_oculto`
+- **Soft Delete:** `NegocioSolucion.esta_activa`, `Comentario.esta_oculto`, `Oferta.estado='eliminada'`
 - **Exclusive Arc:** `Comentario` apunta a `Publicacion` O a `Oferta`, nunca ambos
+- **Vigencia de Puntos:** `verificar_vigencia_puntos()` — Caducidad automática por inactividad, resetea saldos y registra movimiento tipo 'caducidad'
+- **Premios QR:** Ofertas pueden otorgar `premio_en_puntos`/`premio_en_sellos` al canjear vía QR
 - **Cuotas SaaS:** Límites de suscripción validados durante instalación de soluciones
 - **Pydantic v2:** Usar `ConfigDict(from_attributes=True)` para compatibilidad ORM
 - **DTOs:** Los schemas siguen el patrón de herencia Base → Create/Response
@@ -280,6 +282,132 @@ La paleta completa con todas las tonalidades (lime, emerald, sky, tan, lavender,
 **Validación:**
 - Opción 1 (reset BD) + Opción 2 (seed) ejecutadas exitosamente
 - Mensaje: `✅ ¡Base de datos rellenada al 100% en todos sus dominios!`
+
+### Sistema QR para Lealtad + Configuración Wallet + Refactor Ofertas [COMPLETADO — HOY]
+
+**Objetivo:** Implementar el sistema completo de QR para lealtad con premios (puntos/sellos), refactorizar la configuración para soportar múltiples productos estrella, rediseñar el formulario de ofertas con dropdown buttons, y agregar pestaña "Configuración Wallet".
+
+**Base de Datos (`arquitectura_db.dbml`):**
+- `Configuracion_Lealtad` — Eliminados campos `id_producto_estrella` y `multiplicador_producto`
+- Nueva tabla `Configuracion_Productos_Estrella` — Tabla intermedia con FK a `Configuracion_Lealtad` y `Servicios_Productos`, campo `multiplicador_producto`
+- `Ofertas` — Agregados campos `premio_en_puntos` (decimal) y `premio_en_sellos` (int)
+
+**Backend — Modelos (`backend/lealtad/models.py`):**
+- `ConfiguracionLealtad` — Eliminados `id_producto_estrella`, `multiplicador_producto`, relationship `producto_estrella`. Agregada relationship `productos_estrella` (cascade `all, delete-orphan`)
+- Nueva clase `ConfiguracionProductoEstrella` con FK a `configuracion_lealtad` y `servicios_productos`
+- `Oferta` — Agregados campos `premio_en_puntos` (Numeric(10,2)) y `premio_en_sellos` (Integer)
+
+**Backend — Modelos (`backend/catalogo/models.py`):**
+- `ServicioProducto` — Eliminada relationship `configuraciones_lealtad` (ya no aplica)
+
+**Backend — Schemas (`backend/lealtad/schemas.py`):**
+- Nuevos schemas: `ProductoEstrellaCreate`, `ProductoEstrellaResponse`
+- `ConfiguracionLealtadUpdate` — Eliminados `id_producto_estrella`/`multiplicador_producto`, agregado `productos_estrella: Optional[List[ProductoEstrellaCreate]]`
+- `ConfiguracionLealtadResponse` — Eliminados campos viejos, agregado `productos_estrella: List[ProductoEstrellaResponse]`
+- `OfertaCreate` — `fecha_inicio`/`fecha_fin` ahora opcionales, agregados `premio_en_puntos`/`premio_en_sellos`, validador actualizado (fechas solo obligatorias si no hay `limite_existencias`)
+- `OfertaResponse` — Agregados `premio_en_puntos`/`premio_en_sellos`
+- `OfertaReglaServicioCreate` — Validador de exclusión mutua (porcentaje O monto descuento, no ambos)
+- `CanjeResponse` — Agregados `puntos_otorgados`, `sellos_otorgados`, `saldo_puntos_actual`, `saldo_sellos_actual`
+
+**Backend — Service (`backend/lealtad/service.py`):**
+- Nueva función `verificar_vigencia_puntos()` — Valida caducidad de puntos/sellos, resetea saldos y registra movimiento tipo 'caducidad'
+- `canjear_qr_logic()` — Llama `verificar_vigencia_puntos` antes de procesar, crea cartera si no existe, otorga premios (puntos/sellos) después del canje, retorna saldos actualizados
+- `generar_token_qr_logic()` — Llama `verificar_vigencia_puntos`, incluye `premio_en_puntos`/`premio_en_sellos` en payload JWT
+- `obtener_configuracion_lealtad()` — Serializa `productos_estrella` con nombre, tipo e imagen del `ServicioProducto`
+- `actualizar_configuracion_lealtad()` — Reemplazo completo de productos estrella (delete + create), valida multiplicador >= 1.0
+- `crear_oferta_negocio()` — Pasa `premio_en_puntos`/`premio_en_sellos` al crear oferta
+- `obtener_dashboard_negocio()` — Incluye premios en serialización, oculta fechas cuando `limite_existencias` tiene valor
+- Nueva función `obtener_catalogo_productos_estrella()` — Retorna productos únicos del negocio (sin duplicados por sucursal)
+
+**Backend — Router (`backend/lealtad/router.py`):**
+- Nuevo endpoint `GET /negocios/{id}/catalogo-productos-estrella`
+
+**Backend — Seed Data (`backend/datosprueba_BD.py`):**
+- `ConfiguracionLealtad` — Eliminados `id_producto_estrella`/`multiplicador_producto` de las 4 configuraciones
+- 6 registros `ConfiguracionProductoEstrella` creados: Cafetería (Capuchino x2.0, Latte x1.5), Barbería (Corte x1.5), Spa (Masaje x2.0, Facial x1.8), Restaurante (Platillo x1.8)
+- Ofertas con premios: oferta1 (+30pts +1 sello), oferta2 (+20pts), oferta6 (+100pts +2 sellos), oferta10 (+3 sellos)
+- 2 movimientos tipo 'caducidad' agregados como ejemplo
+
+**Frontend — Componentes Nuevos:**
+- `BuscadorCatalogo.tsx` — Búsqueda y selección múltiple de productos/servicios del catálogo con dropdown, filtrado client-side
+- `CardProductoEstrella.tsx` — Card con nombre de producto, input de multiplicador editable (min 1.0), botón eliminar
+- `CardReglaNxN.tsx` — Card para reglas NxN con inputs de cantidad, descuentos (exclusión mutua %/$), monto mínimo (solo requisitos)
+- `ConfiguracionWallet.tsx` — Vista completa de configuración wallet: tasa puntos/peso, sellos/visita, meses vigencia, productos estrella con buscador y cards
+
+**Frontend — Refactor:**
+- `FormularioOferta.tsx` — Rediseño completo con 3 secciones colapsables exclusivas (Información básica, Productos, Configuración opcional), integración con `BuscadorCatalogo` y `CardReglaNxN`, payload con formato multi-producto, campos de premios
+
+**Frontend — Integración:**
+- `FiltrosLealtad.tsx` — Agregada pill 'Configuración' (6 pills total)
+- `LealtadDashboard.tsx` — Caso 'Configuración' renderiza `ConfiguracionWallet`, import del componente
+- `WorkspaceOferta.tsx` — Muestra premios al canjear, vigencia condicional (fechas o "hasta agotar existencias")
+- `OfertaCard.tsx` — Interface actualizada con `premio_en_puntos`/`premio_en_sellos`, badge de premios en footer, fechas opcionales (null cuando hay limite_existencias)
+- `lealtadService.ts` — Nuevo método `obtenerCatalogoProductosEstrella`, `CanjeResponseData` actualizado con campos de premios y saldos
+
+**Bug Fix 422:**
+- `OfertaCreate.fecha_inicio`/`fecha_fin` cambiados de obligatorios a opcionales
+- Validador actualizado: rango de fechas solo se valida si `limite_existencias` es null
+- Frontend envía `undefined` para fechas cuando hay `limite_existencias`
+
+**Validación:**
+- Backend: `from backend.main import app` — 41 routes OK
+- Frontend: `npx tsc --noEmit` — Sin errores
+- BD: Reset + Seed ejecutados exitosamente — `✅ ¡Base de datos rellenada al 100%!`
+- Endpoint test: `GET /configuracion-lealtad` retorna productos_estrella serializados
+- Endpoint test: Dashboard incluye `premio_en_puntos`/`premio_en_sellos` y oculta fechas para ofertas con `limite_existencias`
+
+**Resumen de Archivos Modificados/Creados:**
+
+| # | Archivo | Tipo | Descripción |
+|---|---------|------|-------------|
+| 1 | `arquitectura_db.dbml` | Modificar | Nueva tabla `Configuracion_Productos_Estrella`, eliminados campos de producto estrella único, agregados premios en `Ofertas` |
+| 2 | `backend/lealtad/models.py` | Modificar | Nueva clase `ConfiguracionProductoEstrella`, `Oferta` con premios, eliminada relationship obsoleta |
+| 3 | `backend/catalogo/models.py` | Modificar | Eliminada relationship `configuraciones_lealtad` de `ServicioProducto` |
+| 4 | `backend/lealtad/schemas.py` | Modificar | Nuevos schemas `ProductoEstrellaCreate/Response`, fechas opcionales en `OfertaCreate`, validador exclusión mutua, `CanjeResponse` con premios |
+| 5 | `backend/lealtad/service.py` | Modificar | Nueva función `verificar_vigencia_puntos()`, `obtener_catalogo_productos_estrella()`, canje otorga premios, config serializa productos estrella |
+| 6 | `backend/lealtad/router.py` | Modificar | Nuevo endpoint `GET /negocios/{id}/catalogo-productos-estrella` |
+| 7 | `backend/datosprueba_BD.py` | Modificar | 6 productos estrella, 4 ofertas con premios, 2 movimientos caducidad |
+| 8 | `frontend/components/Lealtad/BuscadorCatalogo.tsx` | **NUEVO** | Componente reutilizable de búsqueda y selección múltiple de productos/servicios |
+| 9 | `frontend/components/Lealtad/CardProductoEstrella.tsx` | **NUEVO** | Card con input de multiplicador editable (min 1.0) |
+| 10 | `frontend/components/Lealtad/CardReglaNxN.tsx` | **NUEVO** | Card para reglas NxN con exclusión mutua de descuentos |
+| 11 | `frontend/components/Lealtad/FormularioOferta.tsx` | Refactor | 3 secciones colapsables, integración con BuscadorCatalogo y CardReglaNxN |
+| 12 | `frontend/components/Lealtad/ConfiguracionWallet.tsx` | **NUEVO** | Vista completa de configuración wallet con productos estrella |
+| 13 | `frontend/components/Lealtad/FiltrosLealtad.tsx` | Modificar | Agregada pill 'Configuración' (6 pills total) |
+| 14 | `frontend/components/Lealtad/LealtadDashboard.tsx` | Modificar | Renderiza `ConfiguracionWallet` cuando filtro activo es 'Configuración' |
+| 15 | `frontend/components/Lealtad/WorkspaceOferta.tsx` | Modificar | Muestra premios, vigencia condicional |
+| 16 | `frontend/components/Lealtad/OfertaCard.tsx` | Modificar | Badge de premios, fechas opcionales |
+| 17 | `frontend/features/lealtad/lealtadService.ts` | Modificar | Nuevo método `obtenerCatalogoProductosEstrella`, `CanjeResponseData` actualizado |
+
+**Total:** 13 archivos modificados + 4 archivos nuevos = 17 archivos
+
+**Endpoints Nuevos/Modificados:**
+
+| Método | Endpoint | Propósito |
+|--------|----------|-----------|
+| `GET` | `/api/lealtad/negocios/{id}/catalogo-productos-estrella` | Productos únicos del negocio para seleccionar como producto estrella |
+| `GET` | `/api/lealtad/negocios/{id}/configuracion-lealtad` | Retorna configuración con `productos_estrella` serializados (nombre, tipo, imagen, multiplicador) |
+| `PUT` | `/api/lealtad/negocios/{id}/configuracion-lealtad` | Acepta `productos_estrella: List[{id_servicio_producto, multiplicador_producto}]` |
+| `POST` | `/api/lealtad/negocios/{id}/ofertas` | Acepta `premio_en_puntos` y `premio_en_sellos`, fechas opcionales si hay `limite_existencias` |
+| `POST` | `/api/lealtad/ofertas/canjear-qr` | Retorna `puntos_otorgados`, `sellos_otorgados`, `saldo_puntos_actual`, `saldo_sellos_actual` |
+
+**Cambios en Base de Datos (Tablas):**
+
+| Tabla | Cambio |
+|-------|--------|
+| `Configuracion_Lealtad` | Eliminados: `id_producto_estrella`, `multiplicador_producto` |
+| `Configuracion_Productos_Estrella` | **NUEVA**: `id`, `id_configuracion_lealtad` (FK), `id_servicio_producto` (FK), `multiplicador_producto` |
+| `Ofertas` | Agregados: `premio_en_puntos` (decimal, nullable), `premio_en_sellos` (int, nullable) |
+
+**Edge Cases Implementados:**
+
+1. **Cartera inexistente al canjear QR:** Se crea automáticamente con saldos 0 antes de otorgar premios
+2. **Oferta sin premios:** QR funciona normalmente sin tocar la cartera
+3. **Vigencia 0 o null:** Puntos nunca caducan, no se ejecuta lógica de caducidad
+4. **Producto estrella duplicado:** Frontend previene selección duplicada, backend valida
+5. **Multiplicador < 1.0:** Backend rechaza con error 400
+6. **Porcentaje y monto descuento simultáneos:** Backend rechaza (422), frontend aplica exclusión mutua
+7. **Oferta con limite_existencias y fechas:** Backend ignora fechas (las pone en null)
+8. **Canje QR con puntos caducados:** Primero resetea saldos (caducidad), luego otorga premios
 
 ## Notas Importantes
 

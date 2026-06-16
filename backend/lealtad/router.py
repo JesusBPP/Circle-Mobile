@@ -113,6 +113,17 @@ def obtener_sucursales_negocio(
     return service.obtener_sucursales_negocio(db, id_negocio)
 
 
+@router.get("/negocios/{id_negocio}/catalogo-productos-estrella")
+def obtener_catalogo_productos_estrella(
+    id_negocio: int,
+    db: Session = Depends(get_db),
+    usuario_id: int = Depends(obtener_id_desde_token)
+):
+    """Devuelve productos y servicios únicos del negocio para seleccionar como producto estrella."""
+    service.validar_acceso_negocio(db, id_negocio, usuario_id)
+    return service.obtener_catalogo_productos_estrella(db, id_negocio)
+
+
 # ==========================================
 # OFERTAS (Motor NxN)
 # ==========================================
