@@ -27,13 +27,16 @@ export interface OfertaFeedItem {
   reglas?: Array<{
     id: number;
     tipo_regla: string;
-    id_servicio_disponible: number | null;
-    nombre_servicio_disponible: string | null;
-    tipo_servicio_disponible: string | null;
-    cantidad: number | null;
-    porcentaje_descuento: number | null;
-    monto_descuento: number | null;
-    monto_minimo: number | null;
+    servicios: Array<{
+      id: number;
+      id_servicio_disponible: number;
+      nombre_servicio: string | null;
+      tipo_servicio: string | null;
+      cantidad: number;
+      porcentaje_descuento: number | null;
+      monto_descuento: number | null;
+      monto_minimo: number | null;
+    }>;
   }>;
 }
 

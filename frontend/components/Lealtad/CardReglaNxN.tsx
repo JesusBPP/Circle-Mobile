@@ -75,47 +75,43 @@ export default function CardReglaNxN({
           />
         </View>
 
-        {!esRequisito && (
-          <>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>% Desc.</Text>
-              <TextInput
-                style={styles.input}
-                value={porcentajeDescuento !== null ? porcentajeDescuento.toString() : ''}
-                onChangeText={(t) => {
-                  if (t === '') { onPorcentajeChange(null); return; }
-                  const val = parseFloat(t);
-                  if (!isNaN(val)) {
-                    const clamped = Math.min(100, Math.max(1, val));
-                    onPorcentajeChange(clamped);
-                    onMontoDescuentoChange(null);
-                  }
-                }}
-                keyboardType="numeric"
-                placeholder="—"
-                placeholderTextColor="#cbd5e1"
-              />
-            </View>
-            <View style={styles.field}>
-              <Text style={styles.fieldLabel}>$ Desc.</Text>
-              <TextInput
-                style={styles.input}
-                value={montoDescuento !== null ? montoDescuento.toString() : ''}
-                onChangeText={(t) => {
-                  if (t === '') { onMontoDescuentoChange(null); return; }
-                  const val = parseFloat(t);
-                  if (!isNaN(val) && val >= 0) {
-                    onMontoDescuentoChange(val);
-                    onPorcentajeChange(null);
-                  }
-                }}
-                keyboardType="numeric"
-                placeholder="—"
-                placeholderTextColor="#cbd5e1"
-              />
-            </View>
-          </>
-        )}
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>% Desc.</Text>
+          <TextInput
+            style={styles.input}
+            value={porcentajeDescuento !== null ? porcentajeDescuento.toString() : ''}
+            onChangeText={(t) => {
+              if (t === '') { onPorcentajeChange(null); return; }
+              const val = parseFloat(t);
+              if (!isNaN(val) && val >= 0 && val <= 100) {
+                onPorcentajeChange(val);
+                onMontoDescuentoChange(null);
+              }
+            }}
+            keyboardType="decimal-pad"
+            placeholder="—"
+            placeholderTextColor="#cbd5e1"
+          />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>$ Desc.</Text>
+          <TextInput
+            style={styles.input}
+            value={montoDescuento !== null ? montoDescuento.toString() : ''}
+            onChangeText={(t) => {
+              if (t === '') { onMontoDescuentoChange(null); return; }
+              const val = parseFloat(t);
+              if (!isNaN(val) && val >= 0) {
+                onMontoDescuentoChange(val);
+                onPorcentajeChange(null);
+              }
+            }}
+            keyboardType="decimal-pad"
+            placeholder="—"
+            placeholderTextColor="#cbd5e1"
+          />
+        </View>
 
         {esRequisito && (
           <View style={styles.field}>
@@ -128,7 +124,7 @@ export default function CardReglaNxN({
                 const val = parseFloat(t);
                 if (!isNaN(val) && val >= 0) onMontoMinimoChange(val);
               }}
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
               placeholder="—"
               placeholderTextColor="#cbd5e1"
             />

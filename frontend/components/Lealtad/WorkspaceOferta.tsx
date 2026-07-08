@@ -9,9 +9,10 @@ import lealtadService from '../../features/lealtad/lealtadService';
 interface WorkspaceOfertaProps {
   ofertaData: OfertaFeedItem; 
   onGuardarEdicion?: (nuevosDatos: any) => void;
+  onRefrescar?: () => void;
 }
 
-export default function WorkspaceOferta({ ofertaData, onGuardarEdicion }: WorkspaceOfertaProps) {
+export default function WorkspaceOferta({ ofertaData, onGuardarEdicion, onRefrescar }: WorkspaceOfertaProps) {
   const [titulo, setTitulo] = useState(ofertaData.titulo || '');
   const [descripcion, setDescripcion] = useState(ofertaData.descripcion || '');
   const [estadoLocal, setEstadoLocal] = useState(ofertaData.estado || 'activa');
@@ -48,6 +49,7 @@ export default function WorkspaceOferta({ ofertaData, onGuardarEdicion }: Worksp
       await lealtadService.actualizarOferta(ofertaData.id_real, { titulo, descripcion });
       Alert.alert('Éxito', 'Textos de la oferta actualizados correctamente.');
       if (onGuardarEdicion) onGuardarEdicion({ titulo, descripcion });
+      if (onRefrescar) onRefrescar();
     } catch (error: any) {
       Alert.alert('Error', error.message || 'No se pudo actualizar la oferta.');
     } finally {
@@ -64,6 +66,7 @@ export default function WorkspaceOferta({ ofertaData, onGuardarEdicion }: Worksp
       await lealtadService.actualizarOferta(ofertaData.id_real, { estado: nuevoEstado });
       setEstadoLocal(nuevoEstado);
       Alert.alert('Éxito', `Oferta ${accion}da correctamente.`);
+      if (onRefrescar) onRefrescar();
     } catch (error: any) {
       Alert.alert('Error', error.message || `No se pudo ${accion} la oferta.`);
     } finally {
@@ -71,7 +74,7 @@ export default function WorkspaceOferta({ ofertaData, onGuardarEdicion }: Worksp
     }
   };
 
-  const reglas = ofertaData.reglas as any[] | undefined;
+  const reglas = ofertaData.reglas;
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
@@ -206,23 +209,23 @@ export default function WorkspaceOferta({ ofertaData, onGuardarEdicion }: Worksp
                 </Text>
               </View>
               
-              {regla.nombre_servicio_disponible && (
-                <Text style={styles.reglaDetalle}>
-                  {regla.tipo_servicio_disponible === 'servicio' ? '🔧' : '📦'} {regla.nombre_servicio_disponible}
-                </Text>
-              )}
-              {regla.cantidad && (
-                <Text style={styles.reglaDetalle}>Cantidad: {regla.cantidad}</Text>
-              )}
-              {regla.porcentaje_descuento && (
-                <Text style={styles.reglaDetalle}>Descuento: {regla.porcentaje_descuento}%</Text>
-              )}
-              {regla.monto_descuento && (
-                <Text style={styles.reglaDetalle}>Monto descuento: ${regla.monto_descuento}</Text>
-              )}
-              {regla.monto_minimo && (
-                <Text style={styles.reglaDetalle}>Monto mínimo: ${regla.monto_minimo}</Text>
-              )}
+              {regla.servicios && regla.servicios.map((servicio, sIndex) => (
+                <View key={servicio.id || sIndex} style={styles.servicioItem}>
+                  <Text style={styles.reglaDetalle}>
+                    {servicio.tipo_servicio === 'servicio' ? '🔧' : '📦'} {servicio.nombre_servicio || 'Producto'}
+                  </Text>
+                  <Text style={styles.reglaDetalle}>Cantidad: {servicio.cantidad}</Text>
+                  {servicio.porcentaje_descuento && (
+                    <Text style={styles.reglaDetalle}>Descuento: {servicio.porcentaje_descuento}%</Text>
+                  )}
+                  {servicio.monto_descuento && (
+                    <Text style={styles.reglaDetalle}>Monto descuento: ${servicio.monto_descuento}</Text>
+                  )}
+                  {servicio.monto_minimo && (
+                    <Text style={styles.reglaDetalle}>Monto mínimo: ${servicio.monto_minimo}</Text>
+                  )}
+                </View>
+              ))}
             </View>
           ))}
         </View>
@@ -322,4 +325,5 @@ const styles = StyleSheet.create({
   reglaHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
   reglaTipo: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
   reglaDetalle: { fontSize: 13, color: '#475569', marginLeft: 24, marginTop: 2 },
+  servicioItem: { marginLeft: 24, marginTop: 4, paddingTop: 4, borderTopWidth: 0.5, borderTopColor: '#e2e8f0' },
 });

@@ -36,6 +36,7 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
   const [showPickerInicio, setShowPickerInicio] = useState(false);
   const [showPickerFin, setShowPickerFin] = useState(false);
   const [limiteStock, setLimiteStock] = useState('');
+  const [porExistencias, setPorExistencias] = useState(false);
 
   const [productosRequisito, setProductosRequisito] = useState<ProductoRegla[]>([]);
   const [productosRecompensa, setProductosRecompensa] = useState<ProductoRegla[]>([]);
@@ -106,7 +107,7 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
       Alert.alert('Falta Información', 'El título de la oferta es obligatorio.');
       return;
     }
-    if (!limiteStock && fechaFin < fechaInicio) {
+    if (!porExistencias && fechaFin < fechaInicio) {
       Alert.alert('Error de Fechas', 'La fecha de fin debe ser posterior a la fecha de inicio.');
       return;
     }
@@ -119,9 +120,9 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
       const payload: any = {
         titulo,
         descripcion: descripcion || undefined,
-        fecha_inicio: limiteStock ? undefined : fechaInicio.toISOString(),
-        fecha_fin: limiteStock ? undefined : fechaFin.toISOString(),
-        limite_existencias: limiteStock ? parseInt(limiteStock) : undefined,
+        fecha_inicio: porExistencias ? undefined : fechaInicio.toISOString(),
+        fecha_fin: porExistencias ? undefined : fechaFin.toISOString(),
+        limite_existencias: porExistencias ? parseInt(limiteStock) : undefined,
         limite_por_usuario: limitePorUsuario ? parseInt(limitePorUsuario) : undefined,
         es_publica: esPublica,
         costo_en_puntos: costoEnPuntos ? parseFloat(costoEnPuntos) : undefined,
@@ -135,6 +136,8 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
             servicios: productosRequisito.map(pr => ({
               id_servicio_disponible: pr.producto.id,
               cantidad: pr.cantidad,
+              porcentaje_descuento: pr.porcentajeDescuento,
+              monto_descuento: pr.montoDescuento,
               monto_minimo: pr.montoMinimo,
             }))
           }] : []),
@@ -215,7 +218,25 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
               </View>
             )}
 
-            {(!limiteStock || parseInt(limiteStock) === 0) ? (
+            <View style={styles.switchRow}>
+              <View style={styles.switchTextWrapper}>
+                <View style={[styles.visibilityBadge, porExistencias ? styles.badgeExistencias : styles.badgeFechas]}>
+                  <Ionicons name={porExistencias ? 'cube' : 'calendar'} size={14} color="#fff" />
+                  <Text style={styles.visibilityBadgeText}>{porExistencias ? 'Por Existencias' : 'Por Fechas'}</Text>
+                </View>
+                <Text style={styles.switchSubtitle}>
+                  {porExistencias ? 'Se agota cuando se acaben las existencias' : 'Válida en un rango de fechas'}
+                </Text>
+              </View>
+              <Switch value={porExistencias} onValueChange={setPorExistencias} trackColor={{ false: '#2563eb', true: '#f59e0b' }} thumbColor={porExistencias ? '#d97706' : '#1d4ed8'} />
+            </View>
+
+            {porExistencias ? (
+              <View>
+                <Text style={styles.label}>Existencias Máx.</Text>
+                <TextInput style={styles.input} value={limiteStock} onChangeText={setLimiteStock} keyboardType="numeric" placeholder="Ej: 100" placeholderTextColor="#cbd5e1" />
+              </View>
+            ) : (
               <View style={styles.row}>
                 <View style={styles.flexItem}>
                   <Text style={styles.label}>Válida Desde</Text>
@@ -232,18 +253,10 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
                   </TouchableOpacity>
                 </View>
               </View>
-            ) : (
-              <View style={styles.infoBox}>
-                <Ionicons name="information-circle" size={18} color="#3b82f6" />
-                <Text style={styles.infoText}>Válida hasta agotar existencias.</Text>
-              </View>
             )}
 
             {showPickerInicio && (<DateTimePicker value={fechaInicio} mode="date" display="default" onChange={(e, d) => { setShowPickerInicio(Platform.OS === 'ios'); if (d) setFechaInicio(d); }}/>)}
             {showPickerFin && (<DateTimePicker value={fechaFin} mode="date" display="default" onChange={(e, d) => { setShowPickerFin(Platform.OS === 'ios'); if (d) setFechaFin(d); }}/>)}
-
-            <Text style={styles.label}>Existencias Máx.</Text>
-            <TextInput style={styles.input} value={limiteStock} onChangeText={setLimiteStock} keyboardType="numeric" placeholder="Ilimitadas (vacío = fechas)" placeholderTextColor="#cbd5e1" />
           </View>
         )}
 
@@ -383,6 +396,8 @@ const styles = StyleSheet.create({
   visibilityBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, alignSelf: 'flex-start' },
   badgePublica: { backgroundColor: '#16a34a' },
   badgeVIP: { backgroundColor: '#d4af37' },
+  badgeExistencias: { backgroundColor: '#f59e0b' },
+  badgeFechas: { backgroundColor: '#2563eb' },
   visibilityBadgeText: { fontSize: 12, fontWeight: '700', color: '#ffffff' },
   switchSubtitle: { fontSize: 12, color: '#64748b', marginTop: 4 },
   whitelistContainer: { backgroundColor: '#fffbeb', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#fde68a', marginBottom: 14 },

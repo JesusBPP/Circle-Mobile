@@ -143,6 +143,10 @@ def llenar_base_datos():
         prod_pastel = catalogo_models.ServicioProducto(nombre="Pastel de Chocolate", costo=85.00, tipo_producto="producto")
         
         serv_reserva = catalogo_models.ServicioProducto(nombre="Reserva Mesa VIP", costo=100.00, tipo_producto="servicio")
+        serv_cata = catalogo_models.ServicioProducto(nombre="Cata de Café", costo=200.00, tipo_producto="servicio")
+        serv_preparacion = catalogo_models.ServicioProducto(nombre="Clase de Preparación", costo=350.00, tipo_producto="servicio")
+        serv_evento = catalogo_models.ServicioProducto(nombre="Evento Privado", costo=1500.00, tipo_producto="servicio")
+        serv_domicilio = catalogo_models.ServicioProducto(nombre="Servicio a Domicilio", costo=50.00, tipo_producto="servicio")
         serv_corte = catalogo_models.ServicioProducto(nombre="Corte de Cabello", costo=250.00, tipo_producto="servicio")
         serv_barba = catalogo_models.ServicioProducto(nombre="Arreglo de Barba", costo=180.00, tipo_producto="servicio")
         serv_corte_barba = catalogo_models.ServicioProducto(nombre="Corte + Barba", costo=380.00, tipo_producto="servicio")
@@ -155,7 +159,8 @@ def llenar_base_datos():
         serv_bebida = catalogo_models.ServicioProducto(nombre="Bebida Artesanal", costo=90.00, tipo_producto="servicio")
         
         db.add_all([prod_capuchino, prod_latte, prod_americano, prod_croissant, prod_pastel,
-                    serv_reserva, serv_corte, serv_barba, serv_corte_barba,
+                    serv_reserva, serv_cata, serv_preparacion, serv_evento, serv_domicilio,
+                    serv_corte, serv_barba, serv_corte_barba,
                     serv_masaje, serv_facial, serv_piedras,
                     serv_membresia, serv_clase,
                     serv_comida, serv_bebida])
@@ -173,10 +178,15 @@ def llenar_base_datos():
         disp_croissant_centro = catalogo_models.ServicioDisponible(id_servicio_producto=prod_croissant.id, id_sucursal=sucursal_cafe_centro.id)
         disp_pastel_centro = catalogo_models.ServicioDisponible(id_servicio_producto=prod_pastel.id, id_sucursal=sucursal_cafe_centro.id)
         disp_reserva_centro = catalogo_models.ServicioDisponible(id_servicio_producto=serv_reserva.id, id_sucursal=sucursal_cafe_centro.id)
+        disp_cata_centro = catalogo_models.ServicioDisponible(id_servicio_producto=serv_cata.id, id_sucursal=sucursal_cafe_centro.id)
+        disp_preparacion_centro = catalogo_models.ServicioDisponible(id_servicio_producto=serv_preparacion.id, id_sucursal=sucursal_cafe_centro.id)
+        disp_evento_centro = catalogo_models.ServicioDisponible(id_servicio_producto=serv_evento.id, id_sucursal=sucursal_cafe_centro.id)
         
         disp_cafe_sur = catalogo_models.ServicioDisponible(id_servicio_producto=prod_capuchino.id, id_sucursal=sucursal_cafe_sur.id)
         disp_latte_sur = catalogo_models.ServicioDisponible(id_servicio_producto=prod_latte.id, id_sucursal=sucursal_cafe_sur.id)
         disp_americano_sur = catalogo_models.ServicioDisponible(id_servicio_producto=prod_americano.id, id_sucursal=sucursal_cafe_sur.id)
+        disp_cata_sur = catalogo_models.ServicioDisponible(id_servicio_producto=serv_cata.id, id_sucursal=sucursal_cafe_sur.id)
+        disp_domicilio_sur = catalogo_models.ServicioDisponible(id_servicio_producto=serv_domicilio.id, id_sucursal=sucursal_cafe_sur.id)
         
         disp_cafe_norte = catalogo_models.ServicioDisponible(id_servicio_producto=prod_capuchino.id, id_sucursal=sucursal_cafe_norte.id)
         disp_latte_norte = catalogo_models.ServicioDisponible(id_servicio_producto=prod_latte.id, id_sucursal=sucursal_cafe_norte.id)
@@ -204,8 +214,8 @@ def llenar_base_datos():
         disp_comida_rest_sur = catalogo_models.ServicioDisponible(id_servicio_producto=serv_comida.id, id_sucursal=sucursal_restaurante_sur.id)
         disp_bebida_rest_sur = catalogo_models.ServicioDisponible(id_servicio_producto=serv_bebida.id, id_sucursal=sucursal_restaurante_sur.id)
         
-        db.add_all([disp_cafe_centro, disp_latte_centro, disp_americano_centro, disp_croissant_centro, disp_pastel_centro, disp_reserva_centro,
-                    disp_cafe_sur, disp_latte_sur, disp_americano_sur,
+        db.add_all([disp_cafe_centro, disp_latte_centro, disp_americano_centro, disp_croissant_centro, disp_pastel_centro, disp_reserva_centro, disp_cata_centro, disp_preparacion_centro, disp_evento_centro,
+                    disp_cafe_sur, disp_latte_sur, disp_americano_sur, disp_cata_sur, disp_domicilio_sur,
                     disp_cafe_norte, disp_latte_norte, disp_pastel_norte,
                     disp_corte_norte, disp_barba_norte, disp_corte_barba_norte,
                     disp_corte_centro_barber, disp_barba_centro_barber,

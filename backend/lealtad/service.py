@@ -491,6 +491,10 @@ def crear_oferta_negocio(db: Session, id_negocio: int, oferta: schemas.OfertaCre
             db.add(nueva_oferta)
             db.flush()
 
+            if nueva_oferta.limite_existencias is not None:
+                nueva_oferta.fecha_inicio = None
+                nueva_oferta.fecha_fin = None
+
             if oferta.reglas:
                 for regla in oferta.reglas:
                     nueva_regla = models.OfertaRegla(

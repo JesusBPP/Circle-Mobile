@@ -409,6 +409,86 @@ La paleta completa con todas las tonalidades (lime, emerald, sky, tan, lavender,
 7. **Oferta con limite_existencias y fechas:** Backend ignora fechas (las pone en null)
 8. **Canje QR con puntos caducados:** Primero resetea saldos (caducidad), luego otorga premios
 
+### Fixes Lealtad v1 y v2 — Validaciones, UX y Scroll [COMPLETADO — HOY]
+
+**Objetivo:** Corregir errores en el módulo de Lealtad: validaciones de backend, experiencia de usuario en formularios, actualización en tiempo real del dashboard, y problemas de scroll en el buscador de catálogo.
+
+**Backend — Validaciones (`backend/lealtad/schemas.py`):**
+- `OfertaCreate.validar_reglas_oferta()` — Nueva validación de exclusión mutua: si `limite_existencias` tiene valor Y también hay fechas → error 422
+- Mensaje: "No se pueden especificar fechas de vigencia cuando la oferta tiene límite de existencias. Usa uno u otro."
+
+**Backend — Capa de defensa (`backend/lealtad/service.py`):**
+- `crear_oferta_negocio()` — Si `limite_existencias` tiene valor, fuerza `fecha_inicio` y `fecha_fin` a None (defensa adicional)
+- Lógica 2x1 verificada: ambas formas funcionan correctamente (requisito con cantidad=2 y descuento, o requisito sin descuento + recompensa con descuento)
+
+**Backend — Seed Data (`backend/datosprueba_BD.py`):**
+- Cafetería El Grano ahora tiene 5 servicios (antes 1): Reserva Mesa VIP, Cata de Café ($200), Clase de Preparación ($350), Evento Privado ($1,500), Servicio a Domicilio ($50)
+- Total catálogo: 10 items (5 productos + 5 servicios)
+
+**Frontend — Switch fechas/existencias (`FormularioOferta.tsx`):**
+- Nuevo estado `porExistencias` con Switch visual (badge "Por Fechas" / "Por Existencias")
+- Reemplazados 3 inputs separados (fecha inicio, fecha fin, existencias) por Switch + input condicional
+- Payload ahora usa `porExistencias` para determinar qué campos enviar (undefined para el modo no activo)
+- Validación de fechas ajustada: solo valida si `!porExistencias`
+
+**Frontend — Descuentos en Requisito (`CardReglaNxN.tsx`):**
+- Inputs `% Desc.` y `$ Desc.` ahora se muestran tanto en requisito como en recompensa (antes solo en recompensa)
+- `$ Mín.` permanece solo en requisito
+- `keyboardType="numeric"` → `keyboardType="decimal-pad"` en los 3 inputs de descuento/mínimo (permite decimales)
+- Eliminado `Math.max(1, val)` del clamp de % Desc (permite escribir "0" como inicio de "0.5")
+
+**Frontend — Actualización en tiempo real (`LealtadDashboard.tsx`):**
+- Nueva función `refrescarSilencioso()` que actualiza `feedItems` y `itemSeleccionado` SIN mostrar loader
+- Pasada a `WorkspaceOferta` y `WorkspacePublicacion` como prop `onRefrescar`
+- Si la oferta fue eliminada (soft delete), navega automáticamente de vuelta a la lista
+- `fetchDashboardData` (con loader) se mantiene solo para: `useFocusEffect`, `handleBack`, `onEliminar`, `onSuccess`
+
+**Frontend — Oferta vinculada (`WorkspacePublicacion.tsx`):**
+- Nuevas props: `onRefrescar`, `onNavegarAOferta`, `ofertaVinculada`
+- Card de oferta vinculada ahora muestra título real y es clickeable (navega al workspace de la oferta)
+- Si la oferta fue eliminada, muestra card roja con mensaje "Oferta vinculada no encontrada"
+- `LealtadDashboard` busca la oferta vinculada en `feedItems` y la pasa como prop
+
+**Frontend — Reglas NxN (`WorkspaceOferta.tsx` + `OfertaCard.tsx`):**
+- Interfaz `OfertaFeedItem.reglas` actualizada: ahora usa `servicios: Array<{...}>` en lugar de campos singulares
+- Renderizado de reglas itera sobre `regla.servicios` (soporta múltiples productos por regla)
+- Nuevo estilo `servicioItem` con borde superior para separar servicios dentro de una regla
+
+**Frontend — BuscadorCatalogo refactor (`BuscadorCatalogo.tsx`):**
+- Reemplazado `FlatList` por `.map()` con `Pressable` (fix VirtualizedList nesting)
+- Dropdown ahora usa `<Modal>` nativo con posicionamiento inteligente (arriba/abajo según espacio disponible)
+- `measureInWindow` para obtener coordenadas reales del input
+- `Pressable` en lugar de `TouchableOpacity` (sigue skill `ui-pressable`)
+- `nestedScrollEnabled` para scroll anidado en Android
+- Cierre automático al tocar fuera, seleccionar item, o presionar botón de cerrar
+- Muestra todos los items al hacer focus (sin necesidad de escribir)
+- Mensaje "Todos los items ya seleccionados" cuando no hay items disponibles
+
+**Validación:**
+- Backend: `npx tsc --noEmit` sin errores
+- Frontend: `npx tsc --noEmit` sin errores
+- BD: Reset + Seed ejecutados exitosamente — `✅ ¡Base de datos rellenada al 100%!`
+- Endpoint test: Catálogo de Cafetería El Grano retorna 10 items (5 productos + 5 servicios)
+- Test exclusión mutua: Oferta con fechas Y limite_existencias → 422, solo fechas → 201, solo existencias → 201
+- Test 2x1: Forma A (requisito cantidad=2, descuento 50%) → 201, Forma B (requisito cantidad=1 + recompensa cantidad=1, descuento 50%) → 201
+
+**Resumen de Archivos Modificados:**
+
+| # | Archivo | Tipo | Descripción |
+|---|---------|------|-------------|
+| 1 | `backend/lealtad/schemas.py` | Modificar | Validación exclusión mutua fechas/existencias |
+| 2 | `backend/lealtad/service.py` | Modificar | Capa de defensa: fuerza fechas a None si hay limite_existencias |
+| 3 | `backend/datosprueba_BD.py` | Modificar | 4 nuevos servicios para Cafetería El Grano |
+| 4 | `frontend/components/Lealtad/FormularioOferta.tsx` | Modificar | Switch fechas/existencias, descuentos en payload de requisito |
+| 5 | `frontend/components/Lealtad/CardReglaNxN.tsx` | Modificar | Descuentos visibles en requisito, teclado decimal-pad |
+| 6 | `frontend/components/Lealtad/LealtadDashboard.tsx` | Modificar | `refrescarSilencioso`, pasar `onRefrescar` a workspaces, buscar oferta vinculada |
+| 7 | `frontend/components/Lealtad/WorkspaceOferta.tsx` | Modificar | Prop `onRefrescar`, iterar sobre `regla.servicios` |
+| 8 | `frontend/components/Lealtad/WorkspacePublicacion.tsx` | Modificar | Props `onRefrescar`, `onNavegarAOferta`, `ofertaVinculada`, card clickeable |
+| 9 | `frontend/components/Lealtad/OfertaCard.tsx` | Modificar | Interfaz `reglas` con `servicios: Array<{...}>` |
+| 10 | `frontend/components/Lealtad/BuscadorCatalogo.tsx` | Refactor | Modal nativo, posicionamiento inteligente, Pressable, scroll anidado |
+
+**Total:** 10 archivos modificados (3 backend + 7 frontend)
+
 ## Notas Importantes
 
 - **Cuentas de prueba:** `admin1@circle.com` (admin), `carlos@negocio.com` (dueño). Todas las contraseñas de prueba: `123`

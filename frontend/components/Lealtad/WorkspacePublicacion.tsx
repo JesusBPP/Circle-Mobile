@@ -11,12 +11,21 @@ interface ComentarioItem {
   id_usuario_consumidor: number;
 }
 
+interface OfertaVinculada {
+  id: number;
+  titulo: string;
+  estado: string;
+}
+
 interface WorkspacePublicacionProps {
   publicacionData: PublicacionFeedItem; 
   onGuardarEdicion?: (nuevosDatos: any) => void;
+  onRefrescar?: () => void;
+  onNavegarAOferta?: (idOferta: number) => void;
+  ofertaVinculada?: OfertaVinculada | null;
 }
 
-export default function WorkspacePublicacion({ publicacionData, onGuardarEdicion }: WorkspacePublicacionProps) {
+export default function WorkspacePublicacion({ publicacionData, onGuardarEdicion, onRefrescar, onNavegarAOferta, ofertaVinculada }: WorkspacePublicacionProps) {
   
   const [titulo, setTitulo] = useState(publicacionData.titulo || '');
   const [descripcion, setDescripcion] = useState(publicacionData.descripcion || '');
@@ -57,6 +66,7 @@ export default function WorkspacePublicacion({ publicacionData, onGuardarEdicion
       if (onGuardarEdicion) {
         onGuardarEdicion({ titulo, descripcion, habilitar_comentarios: habilitarComentarios });
       }
+      if (onRefrescar) onRefrescar();
     } catch (error: any) {
       Alert.alert('Error', error.message || 'No se pudo actualizar la publicación.');
     } finally {
@@ -77,6 +87,7 @@ export default function WorkspacePublicacion({ publicacionData, onGuardarEdicion
             try {
               await lealtadService.ocultarComentario(idComentario);
               setComentarios(comentarios.filter((c) => c.id !== idComentario));
+              if (onRefrescar) onRefrescar();
             } catch (error: any) {
               Alert.alert('Error', error.message || 'No se pudo ocultar el comentario.');
             }
@@ -140,17 +151,38 @@ export default function WorkspacePublicacion({ publicacionData, onGuardarEdicion
         </View>
       </View>
 
-      {publicacionData.id_oferta !== null && (
-        <View style={[styles.card, { backgroundColor: '#f8fafc', borderColor: '#e2e8f0', borderWidth: 1 }]}>
-           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View style={styles.linkIconBox}>
-                <Ionicons name="link" size={20} color="#3b82f6" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.linkTitle}>Vinculado a Oferta Comercial</Text>
-                <Text style={styles.linkSubtitle}>Este post dirige a los clientes a canjear una oferta específica de tu catálogo.</Text>
-              </View>
-           </View>
+      {publicacionData.id_oferta !== null && ofertaVinculada && (
+        <TouchableOpacity 
+          style={[styles.card, { backgroundColor: '#f0f9ff', borderColor: '#bae6fd', borderWidth: 1 }]}
+          onPress={() => onNavegarAOferta?.(publicacionData.id_oferta!)}
+          activeOpacity={0.7}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={styles.linkIconBox}>
+              <Ionicons name="gift" size={20} color="#3b82f6" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>📎 {ofertaVinculada.titulo}</Text>
+              <Text style={styles.linkSubtitle}>
+                Estado: {ofertaVinculada.estado} — Toca para ver detalles
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#3b82f6" />
+          </View>
+        </TouchableOpacity>
+      )}
+
+      {publicacionData.id_oferta !== null && !ofertaVinculada && (
+        <View style={[styles.card, { backgroundColor: '#fef2f2', borderColor: '#fecaca', borderWidth: 1 }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={[styles.linkIconBox, { backgroundColor: '#fee2e2' }]}>
+              <Ionicons name="alert-circle" size={20} color="#ef4444" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.linkTitle}>Oferta vinculada no encontrada</Text>
+              <Text style={styles.linkSubtitle}>La oferta pudo haber sido eliminada.</Text>
+            </View>
+          </View>
         </View>
       )}
 

@@ -47,6 +47,27 @@ export default function LealtadDashboard() {
     }
   };
 
+  const refrescarSilencioso = async () => {
+    if (!negocioId) return;
+    try {
+      const data = await lealtadService.obtenerDashboard(negocioId);
+      const nuevosItems = data.feed_items || [];
+      setFeedItems(nuevosItems);
+
+      if (itemSeleccionado) {
+        const itemActualizado = nuevosItems.find((i: any) => i.id === itemSeleccionado.id);
+        if (itemActualizado) {
+          setItemSeleccionado(itemActualizado);
+        } else {
+          setVistaActiva('lista');
+          setItemSeleccionado(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error en refresh silencioso:", error);
+    }
+  };
+
   useFocusEffect(
     useCallback(() => {
       fetchDashboardData();
@@ -101,11 +122,27 @@ export default function LealtadDashboard() {
 
     // 🌟 CORRECCIÓN ARQUITECTÓNICA: Mapeo estricto de las props de los Workspaces
     if (vistaActiva === 'workspaceOferta' && itemSeleccionado) {
-      return <WorkspaceOferta ofertaData={itemSeleccionado} />;
+      return <WorkspaceOferta ofertaData={itemSeleccionado} onRefrescar={refrescarSilencioso} />;
     }
     
     if (vistaActiva === 'workspacePublicacion' && itemSeleccionado) {
-      return <WorkspacePublicacion publicacionData={itemSeleccionado} />;
+      const ofertaVinculada = itemSeleccionado.id_oferta
+        ? feedItems.find(i => i.type === 'oferta' && i.id_real === itemSeleccionado.id_oferta)
+        : null;
+      return (
+        <WorkspacePublicacion
+          publicacionData={itemSeleccionado}
+          onRefrescar={refrescarSilencioso}
+          onNavegarAOferta={(idOferta) => {
+            const oferta = feedItems.find(i => i.type === 'oferta' && i.id_real === idOferta);
+            if (oferta) {
+              setItemSeleccionado(oferta);
+              setVistaActiva('workspaceOferta');
+            }
+          }}
+          ofertaVinculada={ofertaVinculada ? { id: ofertaVinculada.id_real, titulo: ofertaVinculada.titulo, estado: ofertaVinculada.estado } : null}
+        />
+      );
     }
 
     if (filtroActivo === 'Calificación') {
@@ -133,7 +170,7 @@ export default function LealtadDashboard() {
           data={getFilteredItems()}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => item.type === 'oferta' 
-            ? <OfertaCard data={item} onPress={() => abrirWorkspace(item)} />
+            ? <OfertaCard data={item} onPress={() => abrirWorkspace(item)} onEliminar={fetchDashboardData} />
             : <PublicacionCard data={item} onPress={() => abrirWorkspace(item)} />
           }
           contentContainerStyle={styles.listContent}

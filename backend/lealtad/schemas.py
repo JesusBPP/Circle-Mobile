@@ -126,6 +126,8 @@ class OfertaCreate(BaseModel):
         es_publica = values.get('es_publica', True)
         whitelist = values.get('whitelist_ids')
 
+        if limite_existencias is not None and (inicio is not None or fin is not None):
+            raise ValueError('No se pueden especificar fechas de vigencia cuando la oferta tiene límite de existencias. Usa uno u otro.')
         if limite_existencias is None and inicio and fin and fin <= inicio:
             raise ValueError('La fecha de finalización debe ser posterior a la fecha de inicio.')
         if not es_publica and (not whitelist or len(whitelist) == 0):
