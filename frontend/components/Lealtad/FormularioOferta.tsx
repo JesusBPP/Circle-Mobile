@@ -65,41 +65,45 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
   };
 
   const handleAddWhitelist = (usr: any) => {
-    if (!usuariosWhitelist.find(u => u.id === usr.id)) {
-      setUsuariosWhitelist([...usuariosWhitelist, usr]);
-    }
+    setUsuariosWhitelist(prev => {
+      if (prev.find(u => u.id === usr.id)) return prev;
+      return [...prev, usr];
+    });
   };
 
   const handleRemoveWhitelist = (id: number) => {
-    setUsuariosWhitelist(usuariosWhitelist.filter(u => u.id !== id));
+    setUsuariosWhitelist(prev => prev.filter(u => u.id !== id));
   };
 
   const actualizarProductoRegla = (
-    lista: ProductoRegla[],
     setLista: React.Dispatch<React.SetStateAction<ProductoRegla[]>>,
     productoId: number,
     campo: keyof ProductoRegla,
     valor: any
   ) => {
-    setLista(lista.map(p =>
+    setLista(prev => prev.map(p =>
       p.producto.id === productoId ? { ...p, [campo]: valor } : p
     ));
   };
 
   const handleSeleccionRequisito = (productos: ProductoCatalogo[]) => {
-    const existentes = productosRequisito.filter(pr => productos.find(p => p.id === pr.producto.id));
-    const nuevos = productos
-      .filter(p => !productosRequisito.find(pr => pr.producto.id === p.id))
-      .map(p => ({ producto: p, cantidad: 1, porcentajeDescuento: null, montoDescuento: null, montoMinimo: null }));
-    setProductosRequisito([...existentes, ...nuevos]);
+    setProductosRequisito(prev => {
+      const existentes = prev.filter(pr => productos.find(p => p.id === pr.producto.id));
+      const nuevos = productos
+        .filter(p => !prev.find(pr => pr.producto.id === p.id))
+        .map(p => ({ producto: p, cantidad: 1, porcentajeDescuento: null, montoDescuento: null, montoMinimo: null }));
+      return [...existentes, ...nuevos];
+    });
   };
 
   const handleSeleccionRecompensa = (productos: ProductoCatalogo[]) => {
-    const existentes = productosRecompensa.filter(pr => productos.find(p => p.id === pr.producto.id));
-    const nuevos = productos
-      .filter(p => !productosRecompensa.find(pr => pr.producto.id === p.id))
-      .map(p => ({ producto: p, cantidad: 1, porcentajeDescuento: null, montoDescuento: null, montoMinimo: null }));
-    setProductosRecompensa([...existentes, ...nuevos]);
+    setProductosRecompensa(prev => {
+      const existentes = prev.filter(pr => productos.find(p => p.id === pr.producto.id));
+      const nuevos = productos
+        .filter(p => !prev.find(pr => pr.producto.id === p.id))
+        .map(p => ({ producto: p, cantidad: 1, porcentajeDescuento: null, montoDescuento: null, montoMinimo: null }));
+      return [...existentes, ...nuevos];
+    });
   };
 
   const handleGuardar = async () => {
@@ -279,11 +283,11 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
                 montoDescuento={pr.montoDescuento}
                 montoMinimo={pr.montoMinimo}
                 esRequisito={true}
-                onCantidadChange={(v) => actualizarProductoRegla(productosRequisito, setProductosRequisito, pr.producto.id, 'cantidad', v)}
-                onPorcentajeChange={(v) => actualizarProductoRegla(productosRequisito, setProductosRequisito, pr.producto.id, 'porcentajeDescuento', v)}
-                onMontoDescuentoChange={(v) => actualizarProductoRegla(productosRequisito, setProductosRequisito, pr.producto.id, 'montoDescuento', v)}
-                onMontoMinimoChange={(v) => actualizarProductoRegla(productosRequisito, setProductosRequisito, pr.producto.id, 'montoMinimo', v)}
-                onEliminar={() => setProductosRequisito(productosRequisito.filter(p => p.producto.id !== pr.producto.id))}
+                onCantidadChange={(v) => actualizarProductoRegla(setProductosRequisito, pr.producto.id, 'cantidad', v)}
+                onPorcentajeChange={(v) => actualizarProductoRegla(setProductosRequisito, pr.producto.id, 'porcentajeDescuento', v)}
+                onMontoDescuentoChange={(v) => actualizarProductoRegla(setProductosRequisito, pr.producto.id, 'montoDescuento', v)}
+                onMontoMinimoChange={(v) => actualizarProductoRegla(setProductosRequisito, pr.producto.id, 'montoMinimo', v)}
+                onEliminar={() => setProductosRequisito(prev => prev.filter(p => p.producto.id !== pr.producto.id))}
               />
             ))}
 
@@ -303,11 +307,11 @@ export default function FormularioOferta({ idNegocio, onSuccess }: FormularioOfe
                 montoDescuento={pr.montoDescuento}
                 montoMinimo={pr.montoMinimo}
                 esRequisito={false}
-                onCantidadChange={(v) => actualizarProductoRegla(productosRecompensa, setProductosRecompensa, pr.producto.id, 'cantidad', v)}
-                onPorcentajeChange={(v) => actualizarProductoRegla(productosRecompensa, setProductosRecompensa, pr.producto.id, 'porcentajeDescuento', v)}
-                onMontoDescuentoChange={(v) => actualizarProductoRegla(productosRecompensa, setProductosRecompensa, pr.producto.id, 'montoDescuento', v)}
-                onMontoMinimoChange={(v) => actualizarProductoRegla(productosRecompensa, setProductosRecompensa, pr.producto.id, 'montoMinimo', v)}
-                onEliminar={() => setProductosRecompensa(productosRecompensa.filter(p => p.producto.id !== pr.producto.id))}
+                onCantidadChange={(v) => actualizarProductoRegla(setProductosRecompensa, pr.producto.id, 'cantidad', v)}
+                onPorcentajeChange={(v) => actualizarProductoRegla(setProductosRecompensa, pr.producto.id, 'porcentajeDescuento', v)}
+                onMontoDescuentoChange={(v) => actualizarProductoRegla(setProductosRecompensa, pr.producto.id, 'montoDescuento', v)}
+                onMontoMinimoChange={(v) => actualizarProductoRegla(setProductosRecompensa, pr.producto.id, 'montoMinimo', v)}
+                onEliminar={() => setProductosRecompensa(prev => prev.filter(p => p.producto.id !== pr.producto.id))}
               />
             ))}
           </View>
